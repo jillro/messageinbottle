@@ -42,7 +42,12 @@ def reply_message(message, text, **kwargs):
     try:
         res = requests.post(
             TELEGRAM_API + "sendMessage",
-            data={"chat_id": message["chat"]["id"], "text": text, **kwargs},
+            data={
+                "chat_id": message["chat"]["id"],
+                "text": text,
+                "reply_to_message_id": message["message_id"],
+                **kwargs,
+            },
         )
         res.raise_for_status()
     except HTTPError as e:
