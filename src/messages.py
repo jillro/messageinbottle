@@ -23,6 +23,6 @@ Sorry ! The last person to send a message here was...you ! So we just replaced t
 """
 
 MESSAGE_INTRO = """
-Here is a message from {}:
+Thanks for your message! It will be delivered to the next person. Here is a message from {}:
 
 """
