@@ -1,5 +1,5 @@
-from messenger import messenger_handler
-from telegram import telegram_handler
+from messenger import MessengerHandler
+from telegram import TelegramHandler
 
 
 def lambda_handler(event, context):
@@ -17,7 +17,7 @@ def lambda_handler(event, context):
     Return doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html
     """
     if event["resource"].startswith("/telegram"):
-        return telegram_handler(event)
+        return TelegramHandler().handle(event)
 
     if event["resource"].startswith("/facebook-messenger"):
-        return messenger_handler(event)
+        return MessengerHandler().handle(event)
