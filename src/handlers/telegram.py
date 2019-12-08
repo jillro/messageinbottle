@@ -40,7 +40,7 @@ class TelegramHandler(BaseHandler):
             raise ValueError
 
         if "text" not in update["message"]:
-            return self.OK_RESPONSE
+            raise ValueError
 
         return models.Message(
             user=models.User(
