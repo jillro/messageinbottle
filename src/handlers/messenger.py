@@ -12,6 +12,13 @@ from settings import FB_VERIFY_TOKEN, FB_APP_SECRET, FB_PAGE_TOKEN
 logger = logging.getLogger(__name__)
 
 
+def get_display_name(psid):
+    return requests.get(
+        f"https://graph.facebook.com/{psid}",
+        params={"access_token": FB_PAGE_TOKEN, "fields": "first_name"},
+    ).json()["first_name"]
+
+
 class MessengerHandler(BaseHandler):
     def reply_message(self, text, **kwargs):
         res = None
@@ -31,13 +38,27 @@ class MessengerHandler(BaseHandler):
             raise e
 
     def is_hello_message(self) -> bool:
-        return False
+        return (
+            "postback" in self.message.raw
+            and self.message.raw["postback"]["payload"] == "get_started"
+        )
 
     def get_message(self, event: dict) -> models.Message:
         payload = json.loads(event["body"])
 
         for entry in payload["entry"]:
             message = entry["messaging"][0]
+
+            if "postback" in message:
+                return models.Message(
+                    user=models.User(
+                        application=models.APP_MESSENGER, id=message["sender"]["id"]
+                    ),
+                    sender_display_name=get_display_name(message["sender"]["id"]),
+                    text=message["postback"]["title"],
+                    raw=message,
+                )
+
             if "message" not in message:
                 continue
 
@@ -48,7 +69,7 @@ class MessengerHandler(BaseHandler):
                 user=models.User(
                     application=models.APP_MESSENGER, id=message["sender"]["id"]
                 ),
-                sender_display_name="Unkown ?",
+                sender_display_name=get_display_name(message["sender"]["id"]),
                 text=message["message"]["text"],
                 raw=message,
             )
