@@ -1,5 +1,6 @@
 import json
 import logging
+from dataclasses import asdict
 from datetime import datetime, timezone
 
 import requests
@@ -8,23 +9,23 @@ from botocore.exceptions import ClientError
 from requests import HTTPError
 
 import messages
+import models
 from handlers import BaseHandler
 from settings import TELEGRAM_API
-from models import messages_table
 
 logger = logging.getLogger(__name__)
 
 
 class TelegramHandler(BaseHandler):
-    def reply_message(self, message, text, **kwargs):
+    def reply_message(self, text, **kwargs):
         res = None
         try:
             res = requests.post(
                 TELEGRAM_API + "sendMessage",
                 data={
-                    "chat_id": message["chat"]["id"],
+                    "chat_id": self.message.user.id,
                     "text": text,
-                    "reply_to_message_id": message["message_id"],
+                    "reply_to_message_id": self.message.raw["message_id"],
                     **kwargs,
                 },
             )
@@ -34,33 +35,46 @@ class TelegramHandler(BaseHandler):
                 logger.error(res.text)
             raise e
 
-    def handle(self, event):
+    def get_message(self, event):
         update = json.loads(event["body"])
 
         if "message" not in update:
+            raise ValueError
+
+        if "text" not in update["message"]:
             return self.OK_RESPONSE
 
-        message = update["message"]
+        return models.Message(
+            user=models.User(
+                application=models.APP_TELEGRAM, id=update["message"]["from"]["id"]
+            ),
+            sender_display_name=update["message"]["from"]["first_name"],
+            text=update["message"]["text"],
+            raw=update["message"],
+        )
 
-        if "text" not in message:
-            return self.OK_RESPONSE
+    def handle(self, event):
+        self.event = event
+        self.message = self.get_message(event)
 
-        if message["text"] == "/start":
-            self.reply_message(message, messages.WELCOME, parse_mode="Markdown")
-            # reply_markup=json.dumps({
-            #             "inline_keyboard": [[{"text": "Ok got it !", "callback_data": "/ok"}]],
-            #         }))
+        if self.message.text == "/start":
+            self.reply_message(messages.WELCOME, parse_mode="Markdown")
+
             return self.OK_RESPONSE
 
         iso_datetime = datetime.now(timezone.utc).isoformat()
 
-        tags = self.extract_and_sort_hashtags(message["text"], default=["world"])
+        tags = self.extract_and_sort_hashtags(self.message.text, default=["world"])
 
-        messages_table.put_item(
-            Item={"tags": tags, "datetime": iso_datetime, "message": update["message"]}
+        models.messages_table.put_item(
+            Item={
+                "tags": tags,
+                "datetime": iso_datetime,
+                "message": asdict(self.message),
+            }
         )
 
-        response = messages_table.query(
+        response = models.messages_table.query(
             KeyConditionExpression=Key("tags").eq(tags)
             & Key("datetime").lt(iso_datetime),
             FilterExpression=Attr("sent_to").not_exists(),
@@ -68,12 +82,12 @@ class TelegramHandler(BaseHandler):
         )
 
         if len(response["Items"]) == 0:
-            self.reply_message(message, messages.NO_MESSAGE_EVER)
+            self.reply_message(messages.NO_MESSAGE_EVER)
 
             return self.OK_RESPONSE
 
-        if message["from"]["id"] == response["Items"][0]["message"]["from"]["id"]:
-            self.reply_message(message, messages.YOU_AGAIN)
+        if self.message.user == models.User(**response["Items"][0]["message"]["user"]):
+            self.reply_message(messages.YOU_AGAIN)
 
             return self.OK_RESPONSE
 
@@ -81,10 +95,10 @@ class TelegramHandler(BaseHandler):
 
         for item in response["Items"]:
             try:
-                messages_table.update_item(
+                models.messages_table.update_item(
                     Key={"tags": item["tags"], "datetime": item["datetime"]},
                     UpdateExpression="set sent_to = :sent_to",
-                    ExpressionAttributeValues={":sent_to": message["from"]["id"]},
+                    ExpressionAttributeValues={":sent_to": asdict(self.message.user)},
                     ConditionExpression=Attr("sent_to").not_exists(),
                 )
             except ClientError as e:
@@ -94,9 +108,9 @@ class TelegramHandler(BaseHandler):
             break
 
         text = (
-            messages.MESSAGE_INTRO.format(item["message"]["from"]["first_name"])
+            messages.MESSAGE_INTRO.format(item["message"]["sender_display_name"])
             + item["message"]["text"]
         )
-        self.reply_message(message, text, disable_web_page_preview=True)
+        self.reply_message(text, disable_web_page_preview=True)
 
         return self.OK_RESPONSE
