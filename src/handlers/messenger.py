@@ -41,6 +41,9 @@ class MessengerHandler(BaseHandler):
             if "message" not in message:
                 continue
 
+            if "text" not in message["message"]:
+                continue
+
             return models.Message(
                 user=models.User(
                     application=models.APP_MESSENGER, id=message["sender"]["id"]
