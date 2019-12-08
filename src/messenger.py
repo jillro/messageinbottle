@@ -1,17 +1,14 @@
 import hmac
 import json
+import logging
 
 import requests
 from requests import HTTPError
 
-from app import (
-    FB_PAGE_TOKEN,
-    logger,
-    FB_VERIFY_TOKEN,
-    FORDIDDEN_RESPONSE,
-    FB_APP_SECRET,
-    OK_RESPONSE,
-)
+from handlers import FORDIDDEN_RESPONSE, OK_RESPONSE
+from settings import FB_VERIFY_TOKEN, FB_APP_SECRET, FB_PAGE_TOKEN
+
+logger = logging.getLogger(__name__)
 
 
 def reply_messenger_message(message_event, text, **kwargs):

@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import datetime, timezone
 
 import requests
@@ -7,13 +8,11 @@ from botocore.exceptions import ClientError
 from requests import HTTPError
 
 import messages
-from app import (
-    TELEGRAM_API,
-    logger,
-    OK_RESPONSE,
-    extract_and_sort_hashtags,
-    messages_table,
-)
+from handlers import extract_and_sort_hashtags, OK_RESPONSE
+from settings import TELEGRAM_API
+from models import messages_table
+
+logger = logging.getLogger(__name__)
 
 
 def reply_telegram_message(message, text, **kwargs):
