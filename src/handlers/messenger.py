@@ -50,6 +50,8 @@ class MessengerHandler(BaseHandler):
                 raw=message,
             )
 
+        raise ValueError
+
     def handle_subscribe_webhook(self, event):
         qs = event["queryStringParameters"]
 
