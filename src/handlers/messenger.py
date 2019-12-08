@@ -5,6 +5,7 @@ import logging
 import requests
 from requests import HTTPError
 
+import models
 from handlers import BaseHandler
 from settings import FB_VERIFY_TOKEN, FB_APP_SECRET, FB_PAGE_TOKEN
 
@@ -12,14 +13,14 @@ logger = logging.getLogger(__name__)
 
 
 class MessengerHandler(BaseHandler):
-    def reply_message(self, message_event, text, **kwargs):
+    def reply_message(self, text, **kwargs):
         res = None
         try:
             res = requests.post(
                 "https://graph.facebook.com/v2.6/me/messages",
                 params={"access_token": FB_PAGE_TOKEN},
                 json={
-                    "recipient": {"id": message_event["sender"]["id"]},
+                    "recipient": {"id": self.message.user.id},
                     "message": {"text": text},
                 },
             )
@@ -29,7 +30,27 @@ class MessengerHandler(BaseHandler):
                 logger.error(res.text)
             raise e
 
-    def handle(self, event):
+    def is_hello_message(self) -> bool:
+        return False
+
+    def get_message(self, event: dict) -> models.Message:
+        payload = json.loads(event["body"])
+
+        for entry in payload["entry"]:
+            message = entry["messaging"][0]
+            if "message" not in message:
+                continue
+
+            return models.Message(
+                user=models.User(
+                    application=models.APP_MESSENGER, id=message["sender"]["id"]
+                ),
+                sender_display_name="Unkown ?",
+                text=message["message"]["text"],
+                raw=message,
+            )
+
+    def handle_subscribe_webhook(self, event):
         qs = event["queryStringParameters"]
 
         if qs is not None and "hub.mode" in qs and "hub.verify_token" in qs:
@@ -43,6 +64,7 @@ class MessengerHandler(BaseHandler):
                 logger.error("Messenger webhook verification failure")
                 return self.FORDIDDEN_RESPONSE
 
+    def handle_signature_checking(self, event):
         expected_signature = str(event["headers"]["X-Hub-Signature"])
         signature = (
             "sha1="
@@ -61,13 +83,13 @@ class MessengerHandler(BaseHandler):
             )
             return self.FORDIDDEN_RESPONSE
 
-        payload = json.loads(event["body"])
+    def handle(self, event):
+        res = self.handle_subscribe_webhook(event)
+        if res is not None:
+            return res
 
-        for entry in payload["entry"]:
-            message = entry["messaging"][0]
-            if "message" not in message:
-                logger.error("Webhook type not supported")
-                continue
-            self.reply_message(message, message["message"]["text"])
+        res = self.handle_signature_checking(event)
+        if res is not None:
+            return res
 
-        return self.OK_RESPONSE
+        return super().handle(event)
