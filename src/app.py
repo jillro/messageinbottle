@@ -1,5 +1,4 @@
-from messenger import MessengerHandler
-from telegram import TelegramHandler
+from handlers import MessengerHandler, TelegramHandler
 
 
 def lambda_handler(event, context):

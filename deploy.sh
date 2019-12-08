@@ -6,6 +6,6 @@ rm requirements.txt
 cd package
 zip -r9 function.zip .
 cd ${OLDPWD}/src
-zip -g ../package/function.zip *
+zip -gr9 ../package/function.zip *
 cd ..
 aws lambda update-function-code --function-name MessageInABottleBot --zip-file fileb://package/function.zip
