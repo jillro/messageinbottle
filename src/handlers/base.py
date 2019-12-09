@@ -8,7 +8,12 @@ import messages
 import models
 
 
-class BaseHandler:
+class BaseRequestHandler:
+    def handle(self, request) -> None:
+        raise NotImplementedError
+
+
+class BaseMessageHandler:
     OK_RESPONSE = {"statusCode": 200}
     FORDIDDEN_RESPONSE = {"statusCode": 403}
 

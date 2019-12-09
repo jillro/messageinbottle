@@ -7,7 +7,7 @@ from requests import HTTPError
 
 import models
 from exceptions import ForbiddenError, EarlyResponseException
-from handlers import BaseHandler
+from handlers import BaseMessageHandler, BaseRequestHandler
 from settings import FB_VERIFY_TOKEN, FB_APP_SECRET, FB_PAGE_TOKEN
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,51 @@ def get_display_name(psid):
     ).json()["first_name"]
 
 
-class MessengerHandler(BaseHandler):
+class MessengerRequestHandler(BaseRequestHandler):
+    def handle_subscribe_webhook(self):
+        qs = self.request["queryStringParameters"]
+
+        if qs is not None and "hub.mode" in qs and "hub.verify_token" in qs:
+            if (
+                qs["hub.mode"] == "subscribe"
+                and qs["hub.verify_token"] == FB_VERIFY_TOKEN
+            ):
+                e = EarlyResponseException("Messenger webhook verification success")
+                e.body = qs["hub.challenge"]
+                raise e
+            else:
+                raise ForbiddenError("Messenger webhook verification failure")
+
+    def handle_signature_checking(self):
+        expected_signature = str(self.request["headers"]["X-Hub-Signature"])
+        signature = (
+            "sha1="
+            + hmac.new(
+                FB_APP_SECRET.encode(),
+                self.request["body"].encode("raw-unicode-escape"),
+                "sha1",
+            ).hexdigest()
+        )
+
+        if not hmac.compare_digest(expected_signature, signature):
+            raise ForbiddenError(
+                "Messenger webhook failed to authenticate : calculated signature was {}, header signature was {}.".format(
+                    signature, expected_signature
+                )
+            )
+
+    def handle(self, request):
+        self.request = request
+        self.handle_subscribe_webhook()
+        self.handle_signature_checking()
+
+        payload = json.loads(request["body"])
+
+        for entry in payload["entry"]:
+            MessengerMessageHandler().handle(entry)
+
+
+class MessengerMessageHandler(BaseMessageHandler):
     def reply_message(self, text, **kwargs):
         res = None
         try:
@@ -44,73 +88,33 @@ class MessengerHandler(BaseHandler):
             and self.message.raw["postback"]["payload"] == "get_started"
         )
 
-    def get_message(self, event: dict) -> models.Message:
-        payload = json.loads(event["body"])
+    def get_message(self, webhook_entry: dict) -> models.Message:
+        if "messaging" not in webhook_entry:
+            raise ValueError
 
-        for entry in payload["entry"]:
-            message = entry["messaging"][0]
+        message = webhook_entry["messaging"][0]
 
-            if "postback" in message:
-                return models.Message(
-                    user=models.User(
-                        application=models.APP_MESSENGER, id=message["sender"]["id"]
-                    ),
-                    sender_display_name=get_display_name(message["sender"]["id"]),
-                    text=message["postback"]["title"],
-                    raw=message,
-                )
-
-            if "message" not in message:
-                continue
-
-            if "text" not in message["message"]:
-                continue
-
+        if "postback" in message:
             return models.Message(
                 user=models.User(
                     application=models.APP_MESSENGER, id=message["sender"]["id"]
                 ),
                 sender_display_name=get_display_name(message["sender"]["id"]),
-                text=message["message"]["text"],
+                text=message["postback"]["title"],
                 raw=message,
             )
 
-        raise ValueError
+        if "message" not in message:
+            raise ValueError
 
-    def handle_subscribe_webhook(self, event):
-        qs = event["queryStringParameters"]
+        if "text" not in message["message"]:
+            raise ValueError
 
-        if qs is not None and "hub.mode" in qs and "hub.verify_token" in qs:
-            if (
-                qs["hub.mode"] == "subscribe"
-                and qs["hub.verify_token"] == FB_VERIFY_TOKEN
-            ):
-                e = EarlyResponseException("Messenger webhook verification success")
-                e.body = qs["hub.challenge"]
-                raise e
-            else:
-                raise ForbiddenError("Messenger webhook verification failure")
-
-    def handle_signature_checking(self, event):
-        expected_signature = str(event["headers"]["X-Hub-Signature"])
-        signature = (
-            "sha1="
-            + hmac.new(
-                FB_APP_SECRET.encode(),
-                event["body"].encode("raw-unicode-escape"),
-                "sha1",
-            ).hexdigest()
+        return models.Message(
+            user=models.User(
+                application=models.APP_MESSENGER, id=message["sender"]["id"]
+            ),
+            sender_display_name=get_display_name(message["sender"]["id"]),
+            text=message["message"]["text"],
+            raw=message,
         )
-
-        if not hmac.compare_digest(expected_signature, signature):
-            raise ForbiddenError(
-                "Messenger webhook failed to authenticate : calculated signature was {}, header signature was {}.".format(
-                    signature, expected_signature
-                )
-            )
-
-    def handle(self, event):
-        self.handle_subscribe_webhook(event)
-        self.handle_signature_checking(event)
-
-        return super().handle(event)

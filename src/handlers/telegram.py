@@ -5,13 +5,13 @@ import requests
 from requests import HTTPError
 
 import models
-from handlers import BaseHandler
+from handlers import BaseMessageHandler, BaseRequestHandler
 from settings import TELEGRAM_API
 
 logger = logging.getLogger(__name__)
 
 
-class TelegramHandler(BaseHandler):
+class TelegramRequestHandler(BaseMessageHandler, BaseRequestHandler):
     def reply_message(self, text, markdown=False, **kwargs):
         if markdown:
             kwargs["parse_mode"] = "Markdown"
