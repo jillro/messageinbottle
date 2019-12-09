@@ -6,6 +6,7 @@ import requests
 from requests import HTTPError
 
 import models
+from exceptions import ForbiddenError, EarlyResponseException
 from handlers import BaseHandler
 from settings import FB_VERIFY_TOKEN, FB_APP_SECRET, FB_PAGE_TOKEN
 
@@ -84,11 +85,11 @@ class MessengerHandler(BaseHandler):
                 qs["hub.mode"] == "subscribe"
                 and qs["hub.verify_token"] == FB_VERIFY_TOKEN
             ):
-                logger.info("Messenger webhook verification success")
-                return {"statusCode": 200, "body": qs["hub.challenge"]}
+                e = EarlyResponseException("Messenger webhook verification success")
+                e.body = qs["hub.challenge"]
+                raise e
             else:
-                logger.error("Messenger webhook verification failure")
-                return self.FORDIDDEN_RESPONSE
+                raise ForbiddenError("Messenger webhook verification failure")
 
     def handle_signature_checking(self, event):
         expected_signature = str(event["headers"]["X-Hub-Signature"])
@@ -102,20 +103,14 @@ class MessengerHandler(BaseHandler):
         )
 
         if not hmac.compare_digest(expected_signature, signature):
-            logger.error(
+            raise ForbiddenError(
                 "Messenger webhook failed to authenticate : calculated signature was {}, header signature was {}.".format(
                     signature, expected_signature
                 )
             )
-            return self.FORDIDDEN_RESPONSE
 
     def handle(self, event):
-        res = self.handle_subscribe_webhook(event)
-        if res is not None:
-            return res
-
-        res = self.handle_signature_checking(event)
-        if res is not None:
-            return res
+        self.handle_subscribe_webhook(event)
+        self.handle_signature_checking(event)
 
         return super().handle(event)

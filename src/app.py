@@ -1,12 +1,13 @@
+from exceptions import BeforeRecordError
 from handlers import MessengerHandler, TelegramHandler
 
 
-def lambda_handler(event, context):
+def lambda_handler(request, context):
     """AWS Lambda function
 
-    :param event: API Gateway Lambda Proxy Input Format
+    :param request: API Gateway Lambda Proxy Input Format
     :param context: Lambda Context runtime methods and attributes
-    :type event: dict
+    :type request: dict
     :type context: object
     :return :API Gateway Lambda Proxy Output Format
     :rtype: dict
@@ -15,8 +16,15 @@ def lambda_handler(event, context):
     Context doc: https://docs.aws.amazon.com/lambda/latest/dg/python-context-object.html
     Return doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html
     """
-    if event["resource"].startswith("/telegram"):
-        return TelegramHandler().handle(event)
+    if request["resource"].startswith("/telegram"):
+        try:
+            TelegramHandler().handle(request)
+        except BeforeRecordError as e:
+            return {"statusCode": e.status}
 
-    if event["resource"].startswith("/facebook-messenger"):
-        return MessengerHandler().handle(event)
+        return {"statusCode": 200}
+
+    if request["resource"].startswith("/facebook-messenger"):
+        MessengerHandler().handle(request)
+
+        return {"statusCode": 200}

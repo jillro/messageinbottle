@@ -35,7 +35,8 @@ class BaseHandler:
 
         if self.is_hello_message():
             self.reply_message(messages.WELCOME, markdown=True)
-            return self.OK_RESPONSE
+
+            return
 
         iso_datetime = datetime.now(timezone.utc).isoformat()
 
@@ -59,12 +60,12 @@ class BaseHandler:
         if len(response["Items"]) == 0:
             self.reply_message(messages.NO_MESSAGE_EVER)
 
-            return self.OK_RESPONSE
+            return
 
         if self.message.user == models.User(**response["Items"][0]["message"]["user"]):
             self.reply_message(messages.YOU_AGAIN)
 
-            return self.OK_RESPONSE
+            return
 
         item = response["Items"][0]
 
@@ -87,5 +88,3 @@ class BaseHandler:
             + item["message"]["text"]
         )
         self.reply_message(text, disable_web_page_preview=True)
-
-        return self.OK_RESPONSE
