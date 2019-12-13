@@ -1,3 +1,4 @@
+import secrets
 from dataclasses import asdict
 from datetime import datetime, timezone
 
@@ -50,7 +51,7 @@ class BaseMessageHandler:
         models.messages_table.put_item(
             Item={
                 "tags": tags,
-                "datetime": iso_datetime,
+                "datetime": " ".join([iso_datetime, secrets.token_urlsafe(6)]),
                 "message": asdict(self.message),
             }
         )
