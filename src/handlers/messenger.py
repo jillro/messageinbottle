@@ -73,7 +73,7 @@ class MessengerMessageHandler(BaseMessageHandler):
                 params={"access_token": FB_PAGE_TOKEN},
                 json={
                     "recipient": {"id": self.message.raw["sender"]["id"]},
-                    "message": {"text": text},
+                    "message": {"text": text + self.generate_status()},
                 },
             )
             res.raise_for_status()

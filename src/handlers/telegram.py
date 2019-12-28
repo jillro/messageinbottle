@@ -22,8 +22,9 @@ class TelegramRequestHandler(BaseMessageHandler, BaseRequestHandler):
                 TELEGRAM_API + "sendMessage",
                 data={
                     "chat_id": self.message.raw["from"]["id"],
-                    "text": text,
+                    "text": text + self.generate_status(),
                     "reply_to_message_id": self.message.raw["message_id"],
+                    "disable_web_page_preview": True,
                     **kwargs,
                 },
             )

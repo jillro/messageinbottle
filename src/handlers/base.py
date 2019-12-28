@@ -22,7 +22,7 @@ class BaseMessageHandler:
     def get_message(self, event: dict) -> models.Message:
         raise NotImplementedError
 
-    def reply_message(self, text: str, markdown=False, disable_web_page_preview=False):
+    def reply_message(self, text: str, markdown=False):
         raise NotImplementedError
 
     def is_hello_message(self) -> bool:
@@ -82,7 +82,7 @@ class BaseMessageHandler:
             return self.reply_message(messages.WELCOME, markdown=True)
 
         if not self.remove_bottle():
-            return self.reply_message(messages.NO_MORE_BOTTLE + self.generate_status())
+            return self.reply_message(messages.NO_MORE_BOTTLE)
 
         # store message
         models.messages_table.put_item(Item=models.asddbdict(self.message))
@@ -101,7 +101,7 @@ class BaseMessageHandler:
             return
 
         if self.message.user_id == response["Items"][0]["user_id"]:
-            self.reply_message(messages.YOU_AGAIN + self.generate_status())
+            self.reply_message(messages.YOU_AGAIN)
 
             return
 
@@ -122,4 +122,4 @@ class BaseMessageHandler:
             break
 
         text = messages.MESSAGE_INTRO.format(item["sender_display_name"]) + item["text"]
-        self.reply_message(text, disable_web_page_preview=True)
+        self.reply_message(text)
