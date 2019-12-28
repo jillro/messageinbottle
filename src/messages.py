@@ -1,6 +1,6 @@
 STATUS = """
 
-You have {bottles} 🍾
+{bottles} 🍾
 """
 
 WELCOME = """
@@ -13,6 +13,10 @@ You will receive a message let by another user just after sending yours.
 
 If you use #hastags in your message, you will receive messages (if any) sent by users who put the same combination of \
 hashtags. It is like a separate channel in the sea !
+
+When you send a message, you use a bottle. If someone likes your message, they can send you \
+the bottle back so you can send another one. You start with 5 bottle. When you have used all your bottles, you get \
+a new one after 12 hours.
 
 ⚠️ This bot is still in development and test. There may be many bugs. Please don't send it to all your friends \
 without author agreement.

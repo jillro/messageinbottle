@@ -78,10 +78,8 @@ class BaseMessageHandler:
             models.users_table.put_item(
                 Item=models.asddbdict(models.User(id=self.message.user_id))
             )
-            self.bottles = 1
-            return self.reply_message(
-                messages.WELCOME + self.generate_status(), markdown=True
-            )
+            self.bottles = 5
+            return self.reply_message(messages.WELCOME, markdown=True)
 
         if not self.remove_bottle():
             return self.reply_message(messages.NO_MORE_BOTTLE + self.generate_status())
