@@ -72,7 +72,7 @@ class MessengerMessageHandler(BaseMessageHandler):
                 "https://graph.facebook.com/v2.6/me/messages",
                 params={"access_token": FB_PAGE_TOKEN},
                 json={
-                    "recipient": {"id": self.message.user.id},
+                    "recipient": {"id": self.message.raw["sender"]["id"]},
                     "message": {"text": text},
                 },
             )
@@ -96,8 +96,8 @@ class MessengerMessageHandler(BaseMessageHandler):
 
         if "postback" in message:
             return models.Message(
-                user=models.User(
-                    application=models.APP_MESSENGER, id=message["sender"]["id"]
+                user_id=models.User.generate_id(
+                    app=models.APP_MESSENGER, app_id=message["sender"]["id"]
                 ),
                 sender_display_name=get_display_name(message["sender"]["id"]),
                 text=message["postback"]["title"],
@@ -111,8 +111,8 @@ class MessengerMessageHandler(BaseMessageHandler):
             raise ValueError
 
         return models.Message(
-            user=models.User(
-                application=models.APP_MESSENGER, id=message["sender"]["id"]
+            user_id=models.User.generate_id(
+                app=models.APP_MESSENGER, app_id=message["sender"]["id"]
             ),
             sender_display_name=get_display_name(message["sender"]["id"]),
             text=message["message"]["text"],

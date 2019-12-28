@@ -1,3 +1,8 @@
+STATUS = """
+
+You have {bottles} 🍾
+"""
+
 WELCOME = """
 Welcome ! This is the _Message in a bottle_ bot.
 
@@ -25,4 +30,8 @@ Sorry ! The last person to send a message here was...you ! So we just replaced t
 MESSAGE_INTRO = """
 Thanks for your message! It will be delivered to the next person. Here is a message from {}:
 
+"""
+
+NO_MORE_BOTTLE = """
+No more bottles!
 """

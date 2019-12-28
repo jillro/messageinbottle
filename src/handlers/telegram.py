@@ -21,7 +21,7 @@ class TelegramRequestHandler(BaseMessageHandler, BaseRequestHandler):
             res = requests.post(
                 TELEGRAM_API + "sendMessage",
                 data={
-                    "chat_id": self.message.user.id,
+                    "chat_id": self.message.raw["from"]["id"],
                     "text": text,
                     "reply_to_message_id": self.message.raw["message_id"],
                     **kwargs,
@@ -43,8 +43,8 @@ class TelegramRequestHandler(BaseMessageHandler, BaseRequestHandler):
             raise ValueError
 
         return models.Message(
-            user=models.User(
-                application=models.APP_TELEGRAM, id=update["message"]["from"]["id"]
+            user_id=models.User.generate_id(
+                app=models.APP_TELEGRAM, app_id=update["message"]["from"]["id"]
             ),
             sender_display_name=update["message"]["from"]["first_name"],
             text=update["message"]["text"],
