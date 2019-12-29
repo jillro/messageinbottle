@@ -42,10 +42,8 @@ class TelegramRequestHandler(BaseMessageHandler, BaseRequestHandler):
             kwargs["reply_markup"] = json.dumps(
                 {
                     "inline_keyboard": [
-                        [
-                            {"text": button.text, "callback_data": button.payload}
-                            for button in buttons
-                        ]
+                        [{"text": button.text, "callback_data": button.payload}]
+                        for button in buttons
                     ]
                 }
             )
