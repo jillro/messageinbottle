@@ -35,6 +35,10 @@ def command(handler):
         )
         return handler.reply_message("The bottle has been sent back! Thanks!")
 
+    return handler.reply_message(
+        f"Unkown command\n\n`{handler.message.text}`", markdown=True
+    )
+
 
 def remove_bottle(handler):
     # take a bottle from the user

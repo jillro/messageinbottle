@@ -16,16 +16,15 @@ def message_model_from_telegram(telegram_object):
     if "text" not in telegram_object:
         raise ValueError
 
-    _class = (
-        models.Command if telegram_object["text"].startswith("/") else models.Message
-    )
+    is_command = telegram_object["text"].startswith("/")
+    _class = models.Command if is_command else models.Message
 
     return _class(
         user_id=models.User.generate_id(
             app=models.APP_TELEGRAM, app_id=telegram_object["from"]["id"]
         ),
         sender_display_name=telegram_object["from"]["first_name"],
-        text=telegram_object["text"],
+        text=telegram_object["text"][1:] if is_command else telegram_object["text"],
         raw=telegram_object,
     )
 
