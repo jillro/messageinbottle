@@ -21,6 +21,12 @@ def command(handler):
             messages.WELCOME + generate_status(handler), markdown=True
         )
 
+    if handler.message.text == "status":
+        res = models.users_table.get_item(Key={"id": handler.message.user_id})
+        handler.bottles = res["Item"]["bottles"]
+
+        return handler.reply_message(generate_status(handler))
+
     if handler.message.text.startswith("sendbackbottle"):
         models.users_table.update_item(
             Key={"id": handler.message.text.split("/")[1]},
@@ -117,11 +123,12 @@ def text(handler):
 
     text = messages.MESSAGE_INTRO.format(item["sender_display_name"]) + item["text"]
     handler.reply_message(
-        text + generate_status(handler),
+        text,
         buttons=[
             PostbackButton(
                 text="💙 Send back bottle", payload=f"sendbackbottle/{item['user_id']}"
             ),
             PostbackButton(text="⁉️ What does this mean?", payload="help"),
+            PostbackButton(text="🍾 How much bottle do I have ?", payload="status"),
         ],
     )
