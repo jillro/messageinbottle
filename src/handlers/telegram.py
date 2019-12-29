@@ -50,9 +50,6 @@ class TelegramRequestHandler(BaseMessageHandler, BaseRequestHandler):
                 }
             )
 
-        if self.bottles is not None:
-            text = text + self.generate_status()
-
         data = {
             "chat_id": self.message.raw["from"]["id"],
             "text": text,

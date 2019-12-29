@@ -67,9 +67,6 @@ class MessengerRequestHandler(BaseRequestHandler):
 
 class MessengerMessageHandler(BaseMessageHandler):
     def reply_message(self, text: str, buttons: Optional[list] = None, **kwargs):
-        if self.bottles is not None:
-            text = text + self.generate_status()
-
         if buttons is not None:
             message = {
                 "attachment": {
