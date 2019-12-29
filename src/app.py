@@ -1,4 +1,4 @@
-from exceptions import BeforeRecordError
+from exceptions import BeforeRecordError, EarlyResponseException
 from handlers import TelegramRequestHandler, MessengerRequestHandler
 
 
@@ -19,6 +19,8 @@ def lambda_handler(request, context):
     if request["resource"].startswith("/telegram"):
         try:
             TelegramRequestHandler().handle(request)
+        except EarlyResponseException as e:
+            return {"statusCode": e.status, "body": e.body}
         except BeforeRecordError as e:
             return {"statusCode": e.status}
 
@@ -27,6 +29,8 @@ def lambda_handler(request, context):
     if request["resource"].startswith("/facebook-messenger"):
         try:
             MessengerRequestHandler().handle(request)
+        except EarlyResponseException as e:
+            return {"statusCode": e.status, "body": e.body}
         except BeforeRecordError as e:
             return {"statusCode": e.status}
 
