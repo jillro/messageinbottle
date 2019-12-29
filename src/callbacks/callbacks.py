@@ -125,10 +125,10 @@ def text(handler):
     handler.reply_message(
         text,
         buttons=[
+            PostbackButton(text="⁉️ What does this mean?", payload="help"),
             PostbackButton(
                 text="💙 Send back bottle", payload=f"sendbackbottle/{item['user_id']}"
             ),
-            PostbackButton(text="⁉️ What does this mean?", payload="help"),
             PostbackButton(text="🍾 How much bottle do I have ?", payload="status"),
         ],
     )
