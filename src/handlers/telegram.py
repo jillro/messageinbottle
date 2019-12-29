@@ -16,7 +16,11 @@ def message_model_from_telegram(telegram_object):
     if "text" not in telegram_object:
         raise ValueError
 
-    return models.Message(
+    _class = (
+        models.Command if telegram_object["text"].startswith("/") else models.Message
+    )
+
+    return _class(
         user_id=models.User.generate_id(
             app=models.APP_TELEGRAM, app_id=telegram_object["from"]["id"]
         ),
@@ -87,7 +91,9 @@ class TelegramRequestHandler(BaseMessageHandler, BaseRequestHandler):
                 raw=update["callback_query"],
                 original_message=message_model_from_telegram(
                     update["callback_query"]["message"]
-                ),
+                )
+                if "message" in update["callback_query"]
+                else None,
             )
 
         if "message" not in update:

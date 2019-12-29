@@ -62,6 +62,11 @@ class ButtonCallback(Message):
     original_message: Optional[Message] = None
 
 
+@dataclass
+class Command(Message):
+    pass
+
+
 def asddbdict(instance):
     return _base_asdict(
         instance,

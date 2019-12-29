@@ -76,11 +76,13 @@ class BaseMessageHandler:
         self.event = event
         self.message = self.get_message(event)
 
-        if isinstance(self.message, models.ButtonCallback):
+        if isinstance(self.message, models.ButtonCallback) or isinstance(
+            self.message, models.Command
+        ):
             if self.message.text == "help":
                 return self.reply_message(messages.BOTTLES_HELP)
 
-            if self.message.text == "/start":
+            if self.message.text == "start":
                 models.users_table.put_item(
                     Item=models.asddbdict(models.User(id=self.message.user_id))
                 )
