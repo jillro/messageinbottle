@@ -1,5 +1,6 @@
 import json
 import logging
+from typing import Optional
 
 import requests
 from requests import HTTPError
@@ -11,23 +12,56 @@ from settings import TELEGRAM_API
 logger = logging.getLogger(__name__)
 
 
+def message_model_from_telegram(telegram_object):
+    if "text" not in telegram_object:
+        raise ValueError
+
+    return models.Message(
+        user_id=models.User.generate_id(
+            app=models.APP_TELEGRAM, app_id=telegram_object["from"]["id"]
+        ),
+        sender_display_name=telegram_object["from"]["first_name"],
+        text=telegram_object["text"],
+        raw=telegram_object,
+    )
+
+
 class TelegramRequestHandler(BaseMessageHandler, BaseRequestHandler):
-    def reply_message(self, text, markdown=False, **kwargs):
+    def reply_message(
+        self, text: str, markdown: bool = False, buttons: Optional[list] = None
+    ):
+        kwargs = {}
         if markdown:
             kwargs["parse_mode"] = "Markdown"
 
+        if buttons is not None:
+            kwargs["reply_markup"] = json.dumps(
+                {
+                    "inline_keyboard": [
+                        [
+                            {"text": button.text, "callback_data": button.payload}
+                            for button in buttons
+                        ]
+                    ]
+                }
+            )
+
+        if self.bottles is not None:
+            text = text + self.generate_status()
+
+        data = {
+            "chat_id": self.message.raw["from"]["id"],
+            "text": text,
+            "disable_web_page_preview": True,
+            **kwargs,
+        }
+
+        if "message_id" in self.message.raw:
+            data["reply_to_message_id"] = self.message.raw["message_id"]
+
         res = None
         try:
-            res = requests.post(
-                TELEGRAM_API + "sendMessage",
-                data={
-                    "chat_id": self.message.raw["from"]["id"],
-                    "text": text + self.generate_status(),
-                    "reply_to_message_id": self.message.raw["message_id"],
-                    "disable_web_page_preview": True,
-                    **kwargs,
-                },
-            )
+            res = requests.post(TELEGRAM_API + "sendMessage", data=data)
             res.raise_for_status()
         except HTTPError as e:
             if res is not None:
@@ -37,20 +71,26 @@ class TelegramRequestHandler(BaseMessageHandler, BaseRequestHandler):
     def get_message(self, event: dict) -> models.Message:
         update = json.loads(event["body"])
 
+        if "callback_query" in update:
+            requests.post(
+                TELEGRAM_API + "answerCallbackQuery",
+                data={"callback_query_id": update["callback_query"]["id"]},
+            )
+
+            return models.ButtonCallback(
+                user_id=models.User.generate_id(
+                    app=models.APP_TELEGRAM,
+                    app_id=update["callback_query"]["from"]["id"],
+                ),
+                sender_display_name=update["callback_query"]["from"]["first_name"],
+                text=update["callback_query"]["data"],
+                raw=update["callback_query"],
+                original_message=message_model_from_telegram(
+                    update["callback_query"]["message"]
+                ),
+            )
+
         if "message" not in update:
             raise ValueError
 
-        if "text" not in update["message"]:
-            raise ValueError
-
-        return models.Message(
-            user_id=models.User.generate_id(
-                app=models.APP_TELEGRAM, app_id=update["message"]["from"]["id"]
-            ),
-            sender_display_name=update["message"]["from"]["first_name"],
-            text=update["message"]["text"],
-            raw=update["message"],
-        )
-
-    def is_hello_message(self) -> bool:
-        return self.message.text == "/start"
+        return message_model_from_telegram(update["message"])

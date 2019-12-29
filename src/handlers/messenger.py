@@ -1,6 +1,7 @@
 import hmac
 import json
 import logging
+from typing import Optional
 
 import requests
 from requests import HTTPError
@@ -65,7 +66,31 @@ class MessengerRequestHandler(BaseRequestHandler):
 
 
 class MessengerMessageHandler(BaseMessageHandler):
-    def reply_message(self, text, **kwargs):
+    def reply_message(self, text: str, buttons: Optional[list] = None, **kwargs):
+        if self.bottles is not None:
+            text = text + self.generate_status()
+
+        if buttons is not None:
+            message = {
+                "attachment": {
+                    "type": "template",
+                    "payload": {
+                        "template_type": "button",
+                        "text": text,
+                        "buttons": [
+                            {
+                                "type": "postback",
+                                "title": button.text,
+                                "payload": button.payload,
+                            }
+                            for button in buttons
+                        ],
+                    },
+                }
+            }
+        else:
+            message = {"text": text}
+
         res = None
         try:
             res = requests.post(
@@ -73,7 +98,7 @@ class MessengerMessageHandler(BaseMessageHandler):
                 params={"access_token": FB_PAGE_TOKEN},
                 json={
                     "recipient": {"id": self.message.raw["sender"]["id"]},
-                    "message": {"text": text + self.generate_status()},
+                    "message": message,
                 },
             )
             res.raise_for_status()
@@ -82,12 +107,6 @@ class MessengerMessageHandler(BaseMessageHandler):
                 logger.error(res.text)
             raise e
 
-    def is_hello_message(self) -> bool:
-        return (
-            "postback" in self.message.raw
-            and self.message.raw["postback"]["payload"] == "get_started"
-        )
-
     def get_message(self, webhook_entry: dict) -> models.Message:
         if "messaging" not in webhook_entry:
             raise ValueError
@@ -95,12 +114,12 @@ class MessengerMessageHandler(BaseMessageHandler):
         message = webhook_entry["messaging"][0]
 
         if "postback" in message:
-            return models.Message(
+            return models.ButtonCallback(
                 user_id=models.User.generate_id(
                     app=models.APP_MESSENGER, app_id=message["sender"]["id"]
                 ),
                 sender_display_name=get_display_name(message["sender"]["id"]),
-                text=message["postback"]["title"],
+                text=message["postback"]["payload"],
                 raw=message,
             )
 

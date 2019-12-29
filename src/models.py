@@ -1,7 +1,7 @@
 import secrets
 from dataclasses import dataclass, asdict as _base_asdict, field
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Optional
 
 import boto3
 
@@ -55,6 +55,11 @@ class Message:
             tags = default
 
         return " ".join(tags)
+
+
+@dataclass
+class ButtonCallback(Message):
+    original_message: Optional[Message] = None
 
 
 def asddbdict(instance):

@@ -39,3 +39,14 @@ Thanks for your message! It will be delivered to the next person. Here is a mess
 NO_MORE_BOTTLE = """
 No more bottles!
 """
+
+BOTTLES_HELP = """
+You just received a message in a bottle. If you want, you can answer back and try to start a conversation.
+
+Or you will not, because this is not the person you want to talk with. But that does not mean this person can not be \
+a nice person to meet for other people! In order to create interesting spaces for everyone, we want to encourage \
+people who write long and interesting messages, which can lead to inspiring connections.
+
+Therefore, whether you answer them or not, if you think this person should be able to send more messages, you can send \
+their bottle back. Or maybe this is just trash, and you will let the bottle sink in the sea, where you found it.
+"""

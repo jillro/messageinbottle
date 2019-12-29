@@ -1,11 +1,13 @@
 import logging
 from datetime import datetime, timezone, timedelta
+from typing import Optional
 
 from boto3.dynamodb.conditions import Key, Attr
 from botocore.exceptions import ClientError
 
 import messages
 import models
+from interface import PostbackButton
 
 logger = logging.getLogger(__name__)
 
@@ -18,14 +20,14 @@ class BaseRequestHandler:
 class BaseMessageHandler:
     OK_RESPONSE = {"statusCode": 200}
     FORDIDDEN_RESPONSE = {"statusCode": 403}
+    bottles = None
 
     def get_message(self, event: dict) -> models.Message:
         raise NotImplementedError
 
-    def reply_message(self, text: str, markdown=False):
-        raise NotImplementedError
-
-    def is_hello_message(self) -> bool:
+    def reply_message(
+        self, text: str, markdown: bool = False, buttons: Optional[list] = None
+    ):
         raise NotImplementedError
 
     def remove_bottle(self):
@@ -74,12 +76,24 @@ class BaseMessageHandler:
         self.event = event
         self.message = self.get_message(event)
 
-        if self.is_hello_message():
-            models.users_table.put_item(
-                Item=models.asddbdict(models.User(id=self.message.user_id))
-            )
-            self.bottles = 5
-            return self.reply_message(messages.WELCOME, markdown=True)
+        if isinstance(self.message, models.ButtonCallback):
+            if self.message.text == "help":
+                return self.reply_message(messages.BOTTLES_HELP)
+
+            if self.message.text == "/start":
+                models.users_table.put_item(
+                    Item=models.asddbdict(models.User(id=self.message.user_id))
+                )
+                self.bottles = 5
+                return self.reply_message(messages.WELCOME, markdown=True)
+
+            if self.message.text.startswith("sendbackbottle"):
+                models.users_table.update_item(
+                    Key={"id": self.message.text.split("/")[1]},
+                    UpdateExpression="SET bottles = bottles + :1",
+                    ExpressionAttributeValues={":1": 1},
+                )
+                return self.reply_message("The bottle has been sent back! Thanks!")
 
         if not self.remove_bottle():
             return self.reply_message(messages.NO_MORE_BOTTLE)
@@ -122,4 +136,13 @@ class BaseMessageHandler:
             break
 
         text = messages.MESSAGE_INTRO.format(item["sender_display_name"]) + item["text"]
-        self.reply_message(text)
+        self.reply_message(
+            text,
+            buttons=[
+                PostbackButton(
+                    text="Send the bottle back",
+                    payload=f"sendbackbottle/{item['user_id']}",
+                ),
+                PostbackButton(text="Help !", payload="help"),
+            ],
+        )
