@@ -9,6 +9,7 @@ boto3 = "*"
 
 [packages]
 requests = "*"
+backoff = "*"
 
 [requires]
 python_version = "3.7"

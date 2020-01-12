@@ -1,5 +1,7 @@
 from datetime import datetime, timezone, timedelta
+from time import sleep
 
+import backoff as backoff
 from boto3.dynamodb.conditions import Key, Attr
 from botocore.exceptions import ClientError
 
@@ -80,6 +82,20 @@ def remove_bottle(handler):
     return True
 
 
+@backoff.on_predicate(
+    backoff.expo,
+    lambda response: "Item" not in response,
+    base=2,
+    factor=0.125,
+    max_value=1,
+    max_time=5,
+)
+def poll_message(tags, seq):
+    return models.messages_table.get_item(
+        Key={"tags": tags, "seq": seq - 1}, ConsistentRead=True
+    )
+
+
 def generate_status(handler):
     return messages.STATUS.format(bottles=handler.bottles)
 
@@ -88,42 +104,35 @@ def text(handler):
     if not remove_bottle(handler):
         return handler.reply_message(messages.NO_MORE_BOTTLE)
 
-    # store message
+    # update counter and store message
+    handler.message.set_seq()
     models.messages_table.put_item(Item=models.asddbdict(handler.message))
 
-    # get another one
-    response = models.messages_table.query(
-        KeyConditionExpression=Key("tags").eq(handler.message.tags)
-        & Key("datetime").lt(handler.message.datetime),
-        FilterExpression=Attr("sent_to").not_exists(),
-        ScanIndexForward=False,
+    # if first message in channel, stop
+    if handler.message.seq == 1:
+        handler.reply_message(messages.NO_MESSAGE_EVER + generate_status(handler))
+        return
+
+    # get the previous one
+    response = models.messages_table.get_item(
+        Key={"tags": handler.message.tags, "seq": handler.message.seq - 1}
     )
 
-    if len(response["Items"]) == 0:
-        handler.reply_message(messages.NO_MESSAGE_EVER + generate_status(handler))
+    if "Item" not in response:
+        response = poll_message(handler.message.tags, handler.message.seq)
 
-        return
-
-    if handler.message.user_id == response["Items"][0]["user_id"]:
+    # if the previous one is from the same person, tell them
+    if handler.message.user_id == response["Item"]["user_id"]:
         handler.reply_message(messages.YOU_AGAIN + generate_status(handler))
-
         return
 
-    item = response["Items"][0]
-
-    for item in response["Items"]:
-        try:
-            models.messages_table.update_item(
-                Key={"tags": item["tags"], "datetime": item["datetime"]},
-                UpdateExpression="set sent_to = :sent_to",
-                ExpressionAttributeValues={":sent_to": handler.message.user_id},
-                ConditionExpression=Attr("sent_to").not_exists(),
-            )
-        except ClientError as e:
-            if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
-                continue
-            raise e
-        break
+    # update sent_to on previous item
+    item = response["Item"]
+    models.messages_table.update_item(
+        Key={"tags": item["tags"], "seq": item["seq"]},
+        UpdateExpression="SET sent_to = :sent_to",
+        ExpressionAttributeValues={":sent_to": handler.message.user_id},
+    )
 
     text = messages.MESSAGE_INTRO.format(item["sender_display_name"]) + item["text"]
     handler.reply_message(

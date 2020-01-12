@@ -1,13 +1,14 @@
-import secrets
 from dataclasses import dataclass, asdict as _base_asdict, field
 from datetime import datetime, timezone
 from typing import Any, Optional
 
 import boto3
+from botocore.exceptions import ClientError
 
 dynamodb = boto3.resource("dynamodb", region_name="eu-west-3")
 messages_table = dynamodb.Table("messageinabottle_messages")
 users_table = dynamodb.Table("messageinabottle_users")
+messages_seq_table = dynamodb.Table("messageinabottle_messages_seq")
 
 APP_TELEGRAM = "telegram"
 APP_MESSENGER = "messenger"
@@ -33,18 +34,28 @@ class User:
 @dataclass
 class Message:
     tags: str = field(init=False)
+    seq: Optional[int] = field(init=False)
     user_id: str
     sender_display_name: str
     text: str
     raw: dict
     datetime: str = field(
-        default_factory=lambda: " ".join(
-            [datetime.now(timezone.utc).isoformat(), secrets.token_urlsafe(6)]
-        )
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
 
     def __post_init__(self):
         self.tags = self.extract_and_sort_hashtags(default=["world"])
+
+    def set_seq(self):
+        try:
+            self.seq = messages_seq_table.update_item(
+                Key={"tags": self.tags},
+                UpdateExpression="SET seq = if_not_exists (seq, :0) + :1",
+                ExpressionAttributeValues={":0": 0, ":1": 1},
+                ReturnValues="UPDATED_NEW",
+            )["Attributes"]["seq"]
+        except ClientError as e:
+            raise e
 
     def extract_and_sort_hashtags(self, default):
         tags = sorted(
