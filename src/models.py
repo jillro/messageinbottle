@@ -9,6 +9,7 @@ dynamodb = boto3.resource("dynamodb", region_name="eu-west-3")
 messages_table = dynamodb.Table("messageinabottle_messages")
 users_table = dynamodb.Table("messageinabottle_users")
 messages_seq_table = dynamodb.Table("messageinabottle_messages_seq")
+callbacks_table = dynamodb.Table("messageinabottle_callbacks")
 
 APP_TELEGRAM = "telegram"
 APP_MESSENGER = "messenger"

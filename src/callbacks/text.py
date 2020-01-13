@@ -1,4 +1,5 @@
 from datetime import datetime, timezone, timedelta
+from urllib.parse import quote_plus
 
 import backoff as backoff
 from boto3.dynamodb.conditions import Attr
@@ -25,7 +26,7 @@ def remove_bottle(handler):
             Key={"id": handler.message.user_id},
             UpdateExpression="SET bottles = bottles - :1, bottles_updated = :now",
             ExpressionAttributeValues={":1": 1, ":now": now.isoformat()},
-            ReturnValues="UPDATED_NEW",
+            ReturnValues="UPDATED_NEW",  # TODO remove
             ConditionExpression=Attr("bottles").gt(0),
         )["Attributes"]["bottles"]
     except ClientError as e:
@@ -104,7 +105,8 @@ def text(handler):
         buttons=[
             PostbackButton(text="⁉️ What does this mean?", payload="help"),
             PostbackButton(
-                text="💙 Send back bottle", payload=f"sendbackbottle/{item['user_id']}"
+                text="💙 Send back bottle",
+                payload=f"sendbackbottle/{quote_plus(item['tags'])}/{item['seq']}",
             ),
             PostbackButton(text="🍾 How much bottle do I have ?", payload="status"),
         ],

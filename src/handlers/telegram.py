@@ -6,6 +6,7 @@ import requests
 from requests import HTTPError
 
 import models
+from callbacks.command import dynamic
 from handlers import BaseMessageHandler, BaseRequestHandler
 from settings import TELEGRAM_API
 
@@ -41,7 +42,14 @@ class TelegramRequestHandler(BaseMessageHandler, BaseRequestHandler):
             kwargs["reply_markup"] = json.dumps(
                 {
                     "inline_keyboard": [
-                        [{"text": button.text, "callback_data": button.payload}]
+                        [
+                            {
+                                "text": button.text,
+                                "callback_data": button.payload
+                                if len(button.payload) < 65
+                                else dynamic(button.payload),
+                            }
+                        ]
                         for button in buttons
                     ]
                 }
