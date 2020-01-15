@@ -11,6 +11,8 @@ contact information in your message, so they can write you back.
 
 You can write to specific channels using #hashtags in your message. Only users using the same #hashtags \
 combination can get your message.
+
+Visit https://bottlebot.site for more informations.
 """
 
 NO_MESSAGE_EVER = """
