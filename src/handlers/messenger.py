@@ -121,9 +121,11 @@ class MessengerMessageHandler(BaseMessageHandler):
             )
 
         if "message" not in message:
+            logger.error("Failed to parse Messenger payload {}", json.dumps(message))
             raise ValueError
 
         if "text" not in message["message"]:
+            logger.error("Failed to parse Messenger payload {}", json.dumps(message))
             raise ValueError
 
         return models.Message(
