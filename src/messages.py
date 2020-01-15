@@ -4,22 +4,13 @@ STATUS = """
 """
 
 WELCOME = """
-Welcome ! This is the _Message in a bottle_ bot.
+Welcome ! This is _Message in a bottle_ bot.
 
-Simply send a message to this bot. If someone comes after you, it will be forwarded to them. If you want, you can \
-leave contact information in your message so the next person can answer you back.
+Send a message to the bot. Someone will get it, and you will get someone else message. If you want, you can leave \
+contact information in your message, so they can write you back.
 
-You will receive a message let by another user just after sending yours.
-
-If you use #hastags in your message, you will receive messages (if any) sent by users who put the same combination of \
-hashtags. It is like a separate channel in the sea !
-
-When you send a message, you use a bottle. If someone likes your message, they can send you \
-the bottle back so you can send another one. You start with 5 bottle. When you have used all your bottles, you get \
-a new one after 12 hours.
-
-⚠️ This bot is still in development and test. There may be many bugs. Please don't send it to all your friends \
-without author agreement.
+You can write to specific channels using #hashtags in your message. Only users using the same #hashtags \
+combination can get your message.
 """
 
 NO_MESSAGE_EVER = """
