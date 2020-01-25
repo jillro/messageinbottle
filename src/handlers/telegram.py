@@ -62,9 +62,6 @@ class TelegramRequestHandler(BaseMessageHandler, BaseRequestHandler):
             **kwargs,
         }
 
-        if "message_id" in self.message.raw:
-            data["reply_to_message_id"] = self.message.raw["message_id"]
-
         res = None
         try:
             res = requests.post(TELEGRAM_API + "sendMessage", data=data)
