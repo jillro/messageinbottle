@@ -1,7 +1,6 @@
 import hmac
 import json
 import logging
-from typing import Optional
 
 import requests
 from requests import HTTPError
@@ -70,33 +69,37 @@ class MessengerMessageHandler(BaseMessageHandler):
         if "messaging" not in webhook_entry:
             raise ValueError
 
-        message = webhook_entry["messaging"][0]
+        messaging_entry = webhook_entry["messaging"][0]
 
-        if "postback" in message:
+        if "postback" in messaging_entry:
             return models.ButtonCallback(
                 id=None,
                 user_id=models.User.generate_id(
-                    app=models.APP_MESSENGER, app_id=message["sender"]["id"]
+                    app=models.APP_MESSENGER, app_id=messaging_entry["sender"]["id"]
                 ),
-                sender_display_name=get_display_name(message["sender"]["id"]),
-                text=message["postback"]["payload"],
-                raw=message,
+                sender_display_name=get_display_name(messaging_entry["sender"]["id"]),
+                text=messaging_entry["postback"]["payload"],
+                raw=messaging_entry,
             )
 
-        if "message" not in message:
-            logger.error("Failed to parse Messenger payload {}", json.dumps(message))
+        if "message" not in messaging_entry:
+            logger.error(
+                "Failed to parse Messenger payload {}", json.dumps(messaging_entry)
+            )
             raise ValueError
 
-        if "text" not in message["message"]:
-            logger.error("Failed to parse Messenger payload {}", json.dumps(message))
+        if "text" not in messaging_entry["message"]:
+            logger.error(
+                "Failed to parse Messenger payload {}", json.dumps(messaging_entry)
+            )
             raise ValueError
 
         reply_to = (
             models.Message.generate_id(
                 app=models.APP_MESSENGER,
-                app_id=f"{message['message']['reply_to']['mid']}",
+                app_id=f"{messaging_entry['message']['reply_to']['mid']}",
             )
-            if "reply_to" in message["message"]
+            if "reply_to" in messaging_entry["message"]
             else None
         )
 
@@ -106,7 +109,7 @@ class MessengerMessageHandler(BaseMessageHandler):
                 "https://graph.facebook.com/v2.6/me/messages",
                 params={"access_token": FB_PAGE_TOKEN},
                 json={
-                    "recipient": {"id": message["sender"]["id"]},
+                    "recipient": {"id": messaging_entry["sender"]["id"]},
                     "sender_action": "mark_seen",
                 },
             )
@@ -118,13 +121,13 @@ class MessengerMessageHandler(BaseMessageHandler):
 
         return models.IncomingMessage(
             id=models.IncomingMessage.generate_id(
-                app=models.APP_MESSENGER, app_id=message["message"]["mid"]
+                app=models.APP_MESSENGER, app_id=messaging_entry["message"]["mid"]
             ),
             user_id=models.User.generate_id(
-                app=models.APP_MESSENGER, app_id=message["sender"]["id"]
+                app=models.APP_MESSENGER, app_id=messaging_entry["sender"]["id"]
             ),
-            sender_display_name=get_display_name(message["sender"]["id"]),
-            text=message["message"]["text"],
-            raw=message,
+            sender_display_name=get_display_name(messaging_entry["sender"]["id"]),
+            text=messaging_entry["message"]["text"],
+            raw=messaging_entry,
             reply_to=reply_to,
         )
