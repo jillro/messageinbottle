@@ -138,7 +138,7 @@ def text(handler: "BaseMessageHandler"):
     reply = handler.reply_message(
         text + generate_status(handler),
         buttons=[
-            PostbackButton(text="⁉️ What does this mean?", payload="help"),
+            PostbackButton(text="⁉️ Help", payload="help"),
             PostbackButton(
                 text="💙 Send back bottle",
                 payload=f"sendbackbottle/{quote_plus(item['tags'])}/{item['seq']}",
