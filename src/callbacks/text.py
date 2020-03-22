@@ -72,10 +72,20 @@ def poll_message(tags, seq):
 
 def text(handler: "BaseMessageHandler"):
     if handler.message.reply_to is not None:
-        res = models.replies_table.get_item(Key={"id": handler.message.reply_to})
-
-        if "Item" in res:
-            sent_for = res["Item"]["sent_for"]
+        try:
+            item = models.replies_table.update_item(
+                Key={"id": handler.message.reply_to},
+                UpdateExpression="SET replied_back = :1",
+                ExpressionAttributeValues={":1": True},
+                ConditionExpression=Attr("replied_back").not_exists(),
+                ReturnValues="ALL_NEW",
+            )["Attributes"]
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
+                return handler.reply_message("You can only reply once per message.")
+            raise e
+        else:
+            sent_for = item["sent_for"]
 
             reply = send_message(
                 models.SentMessage(
@@ -86,9 +96,7 @@ def text(handler: "BaseMessageHandler"):
                     )
                     + handler.message.text,
                     raw={},
-                    reply_to=res["Item"]["original_message_id"]
-                    if "original_message_id" in res["Item"]
-                    else None,
+                    reply_to=item["original_message_id"],
                 )
             )
 
@@ -97,7 +105,6 @@ def text(handler: "BaseMessageHandler"):
                     "id": reply.id,
                     "sent_for": handler.message.user_id,
                     "original_message_id": handler.message.id,
-                    "text": handler.message.text,
                 }
             )
 
@@ -152,6 +159,5 @@ def text(handler: "BaseMessageHandler"):
             "id": reply.id,
             "sent_for": item["user_id"],
             "original_message_id": item["id"],
-            "text": item["text"],
         }
     )
