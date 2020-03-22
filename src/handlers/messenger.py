@@ -66,45 +66,7 @@ class MessengerRequestHandler(BaseRequestHandler):
 
 
 class MessengerMessageHandler(BaseMessageHandler):
-    def reply_message(self, text: str, buttons: Optional[list] = None, **kwargs):
-        if buttons is not None:
-            message = {
-                "attachment": {
-                    "type": "template",
-                    "payload": {
-                        "template_type": "button",
-                        "text": text,
-                        "buttons": [
-                            {
-                                "type": "postback",
-                                "title": button.text,
-                                "payload": button.payload,
-                            }
-                            for button in buttons
-                        ],
-                    },
-                }
-            }
-        else:
-            message = {"text": text}
-
-        res = None
-        try:
-            res = requests.post(
-                "https://graph.facebook.com/v2.6/me/messages",
-                params={"access_token": FB_PAGE_TOKEN},
-                json={
-                    "recipient": {"id": self.message.raw["sender"]["id"]},
-                    "message": message,
-                },
-            )
-            res.raise_for_status()
-        except HTTPError as e:
-            if res is not None:
-                logger.error(res.text)
-            raise e
-
-    def get_message(self, webhook_entry: dict) -> models.Message:
+    def get_message(self, webhook_entry: dict) -> models.IncomingMessage:
         if "messaging" not in webhook_entry:
             raise ValueError
 
@@ -112,6 +74,7 @@ class MessengerMessageHandler(BaseMessageHandler):
 
         if "postback" in message:
             return models.ButtonCallback(
+                id=None,
                 user_id=models.User.generate_id(
                     app=models.APP_MESSENGER, app_id=message["sender"]["id"]
                 ),

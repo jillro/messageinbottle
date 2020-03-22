@@ -34,15 +34,31 @@ class User:
 
 @dataclass
 class Message:
-    tags: str = field(init=False)
-    seq: Optional[int] = field(init=False)
+    id: Optional[str]
     user_id: str
-    sender_display_name: str
     text: str
     raw: dict
     datetime: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+        init=False, default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
+
+    @classmethod
+    def generate_id(cls, app: str, app_id: Any):
+        return f"{app} {app_id}"
+
+
+@dataclass
+class SentMessage(Message):
+    reply_to: Optional[str] = None
+    pass
+
+
+@dataclass
+class IncomingMessage(Message):
+    tags: str = field(init=False)
+    seq: Optional[int] = field(init=False)
+    sender_display_name: str
+    reply_to: Optional[str] = None
 
     def __post_init__(self):
         self.tags = self.extract_and_sort_hashtags(default=["world"])
@@ -70,12 +86,12 @@ class Message:
 
 
 @dataclass
-class ButtonCallback(Message):
-    original_message: Optional[Message] = None
+class ButtonCallback(IncomingMessage):
+    original_message: Optional[IncomingMessage] = None
 
 
 @dataclass
-class Command(Message):
+class Command(IncomingMessage):
     pass
 
 

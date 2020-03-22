@@ -3,10 +3,8 @@ import logging
 from typing import Optional
 
 import requests
-from requests import HTTPError
 
 import models
-from callbacks.command import dynamic
 from handlers import BaseMessageHandler, BaseRequestHandler
 from settings import TELEGRAM_API
 
@@ -18,60 +16,34 @@ def message_model_from_telegram(telegram_object):
         raise ValueError
 
     is_command = telegram_object["text"].startswith("/")
-    _class = models.Command if is_command else models.Message
+    _class = models.Command if is_command else models.IncomingMessage
+
+    reply_to = (
+        models.Message.generate_id(
+            app=models.APP_TELEGRAM,
+            app_id=f"{telegram_object['reply_to_message']['chat']['id']} {telegram_object['reply_to_message']['message_id']}",
+        )
+        if "reply_to_message" in telegram_object
+        else None
+    )
 
     return _class(
+        id=models.Message.generate_id(
+            app=models.APP_TELEGRAM,
+            app_id=f"{telegram_object['chat']['id']} {telegram_object['message_id']}",
+        ),
         user_id=models.User.generate_id(
             app=models.APP_TELEGRAM, app_id=telegram_object["from"]["id"]
         ),
         sender_display_name=telegram_object["from"]["first_name"],
         text=telegram_object["text"][1:] if is_command else telegram_object["text"],
         raw=telegram_object,
+        reply_to=reply_to,
     )
 
 
 class TelegramRequestHandler(BaseMessageHandler, BaseRequestHandler):
-    def reply_message(
-        self, text: str, markdown: bool = False, buttons: Optional[list] = None
-    ):
-        kwargs = {}
-        if markdown:
-            kwargs["parse_mode"] = "Markdown"
-
-        if buttons is not None:
-            kwargs["reply_markup"] = json.dumps(
-                {
-                    "inline_keyboard": [
-                        [
-                            {
-                                "text": button.text,
-                                "callback_data": button.payload
-                                if len(button.payload) < 65
-                                else dynamic(button.payload),
-                            }
-                        ]
-                        for button in buttons
-                    ]
-                }
-            )
-
-        data = {
-            "chat_id": self.message.raw["from"]["id"],
-            "text": text,
-            "disable_web_page_preview": True,
-            **kwargs,
-        }
-
-        res = None
-        try:
-            res = requests.post(TELEGRAM_API + "sendMessage", data=data)
-            res.raise_for_status()
-        except HTTPError as e:
-            if res is not None:
-                logger.error(res.text)
-            raise e
-
-    def get_message(self, event: dict) -> models.Message:
+    def get_message(self, event: dict) -> models.IncomingMessage:
         update = json.loads(event["body"])
 
         if "callback_query" in update:
@@ -81,6 +53,7 @@ class TelegramRequestHandler(BaseMessageHandler, BaseRequestHandler):
             )
 
             return models.ButtonCallback(
+                id=None,
                 user_id=models.User.generate_id(
                     app=models.APP_TELEGRAM,
                     app_id=update["callback_query"]["from"]["id"],

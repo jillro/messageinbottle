@@ -1,5 +1,4 @@
-from exceptions import BeforeRecordError, EarlyResponseException
-from handlers import TelegramRequestHandler, MessengerRequestHandler
+from handlers import handle
 
 
 def lambda_handler(request, context):
@@ -16,22 +15,4 @@ def lambda_handler(request, context):
     Context doc: https://docs.aws.amazon.com/lambda/latest/dg/python-context-object.html
     Return doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html
     """
-    if request["resource"].startswith("/telegram"):
-        try:
-            TelegramRequestHandler().handle(request)
-        except EarlyResponseException as e:
-            return {"statusCode": e.status, "body": e.body}
-        except BeforeRecordError as e:
-            return {"statusCode": e.status}
-
-        return {"statusCode": 200}
-
-    if request["resource"].startswith("/facebook-messenger"):
-        try:
-            MessengerRequestHandler().handle(request)
-        except EarlyResponseException as e:
-            return {"statusCode": e.status, "body": e.body}
-        except BeforeRecordError as e:
-            return {"statusCode": e.status}
-
-        return {"statusCode": 200}
+    return handle(request)

@@ -1,4 +1,5 @@
 from datetime import datetime, timezone, timedelta
+from typing import TYPE_CHECKING
 from urllib.parse import quote_plus
 
 import backoff as backoff
@@ -9,9 +10,13 @@ import messages
 import models
 from callbacks.utils import generate_status
 from interface import PostbackButton
+from senders import send_message
+
+if TYPE_CHECKING:
+    from handlers import BaseMessageHandler
 
 
-def remove_bottle(handler):
+def remove_bottle(handler: "BaseMessageHandler"):
     # take a bottle from the user
     # we first try to remove a bottle from the user by checking thay have more than 1
     # of not, we check if last time a bottle was removed was more than 12 hours ago
