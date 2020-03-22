@@ -85,6 +85,11 @@ def text(handler: "BaseMessageHandler"):
                 return handler.reply_message("You can only reply once per message.")
             raise e
         else:
+            if datetime.fromisoformat(item["datetime"]) + timedelta(
+                hours=23, minutes=59
+            ) < datetime.now(timezone.utc):
+                return handler.reply_message("You had 24 hours to reply, sorry !")
+
             sent_for = item["sent_for"]
 
             reply = send_message(
@@ -103,6 +108,7 @@ def text(handler: "BaseMessageHandler"):
             return models.replies_table.put_item(
                 Item={
                     "id": reply.id,
+                    "datetime": handler.message.datetime,
                     "sent_for": handler.message.user_id,
                     "original_message_id": handler.message.id,
                 }
@@ -157,6 +163,7 @@ def text(handler: "BaseMessageHandler"):
     models.replies_table.put_item(
         Item={
             "id": reply.id,
+            "datetime": reply.datetime,
             "sent_for": item["user_id"],
             "original_message_id": item["id"],
         }
