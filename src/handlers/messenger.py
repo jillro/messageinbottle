@@ -91,11 +91,40 @@ class MessengerMessageHandler(BaseMessageHandler):
             logger.error("Failed to parse Messenger payload {}", json.dumps(message))
             raise ValueError
 
-        return models.Message(
+        reply_to = (
+            models.Message.generate_id(
+                app=models.APP_MESSENGER,
+                app_id=f"{message['message']['reply_to']['mid']}",
+            )
+            if "reply_to" in message["message"]
+            else None
+        )
+
+        res = None
+        try:
+            res = requests.post(
+                "https://graph.facebook.com/v2.6/me/messages",
+                params={"access_token": FB_PAGE_TOKEN},
+                json={
+                    "recipient": {"id": message["sender"]["id"]},
+                    "sender_action": "mark_seen",
+                },
+            )
+            res.raise_for_status()
+        except HTTPError as e:
+            if res is not None:
+                logger.error(res.text)
+            raise e
+
+        return models.IncomingMessage(
+            id=models.IncomingMessage.generate_id(
+                app=models.APP_MESSENGER, app_id=message["message"]["mid"]
+            ),
             user_id=models.User.generate_id(
                 app=models.APP_MESSENGER, app_id=message["sender"]["id"]
             ),
             sender_display_name=get_display_name(message["sender"]["id"]),
             text=message["message"]["text"],
             raw=message,
+            reply_to=reply_to,
         )
