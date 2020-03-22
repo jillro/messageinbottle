@@ -50,9 +50,6 @@ class MessengerSender(BaseSender):
             "message": message_json,
         }
 
-        if reply_to_message_id is not None:
-            message_json["reply_to"] = {"mid": reply_to_message_id}
-
         res = None
         try:
             res = requests.post(
