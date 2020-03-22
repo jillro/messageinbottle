@@ -10,6 +10,7 @@ messages_table = dynamodb.Table("messageinabottle_messages")
 users_table = dynamodb.Table("messageinabottle_users")
 messages_seq_table = dynamodb.Table("messageinabottle_messages_seq")
 callbacks_table = dynamodb.Table("messageinabottle_callbacks")
+replies_table = dynamodb.Table("messageinabottle_replies")
 
 APP_TELEGRAM = "telegram"
 APP_MESSENGER = "messenger"

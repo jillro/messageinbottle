@@ -29,6 +29,11 @@ Thanks for your message! It will be delivered to the next person. Here is a mess
 
 """
 
+REPLY_INTRO = """
+{} replied to your message!
+
+"""
+
 NO_MORE_BOTTLE = """
 No more bottles!
 """

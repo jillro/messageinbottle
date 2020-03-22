@@ -70,7 +70,37 @@ def poll_message(tags, seq):
     )
 
 
-def text(handler):
+def text(handler: "BaseMessageHandler"):
+    if handler.message.reply_to is not None:
+        res = models.replies_table.get_item(Key={"id": handler.message.reply_to})
+
+        if "Item" in res:
+            sent_for = res["Item"]["sent_for"]
+
+            reply = send_message(
+                models.SentMessage(
+                    id=None,
+                    user_id=sent_for,
+                    text=messages.REPLY_INTRO.format(
+                        handler.message.sender_display_name
+                    )
+                    + handler.message.text,
+                    raw={},
+                    reply_to=res["Item"]["original_message_id"]
+                    if "original_message_id" in res["Item"]
+                    else None,
+                )
+            )
+
+            return models.replies_table.put_item(
+                Item={
+                    "id": reply.id,
+                    "sent_for": handler.message.user_id,
+                    "original_message_id": handler.message.id,
+                    "text": handler.message.text,
+                }
+            )
+
     if not remove_bottle(handler):
         return handler.reply_message(messages.NO_MORE_BOTTLE)
 
@@ -105,8 +135,8 @@ def text(handler):
     )
 
     text = messages.MESSAGE_INTRO.format(item["sender_display_name"]) + item["text"]
-    handler.reply_message(
-        text,
+    reply = handler.reply_message(
+        text + generate_status(handler),
         buttons=[
             PostbackButton(text="⁉️ What does this mean?", payload="help"),
             PostbackButton(
@@ -115,4 +145,13 @@ def text(handler):
             ),
             PostbackButton(text="🍾 How much bottle do I have ?", payload="status"),
         ],
+    )
+
+    models.replies_table.put_item(
+        Item={
+            "id": reply.id,
+            "sent_for": item["user_id"],
+            "original_message_id": item["id"],
+            "text": item["text"],
+        }
     )
