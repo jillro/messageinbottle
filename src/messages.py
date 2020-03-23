@@ -6,11 +6,10 @@ STATUS = """
 WELCOME = """
 Welcome ! This is _Message in a bottle_ bot.
 
-Send a message to the bot. Someone will get it, and you will get someone else message. If you want, you can leave \
-contact information in your message, so they can write you back.
+Send a message to the bot. Someone will randomly get it, and you will get someone else message.
 
-You can write to specific channels using #hashtags in your message. Only users using the same #hashtags \
-combination can get your message.
+Write to specific channels using #hashtags in your message. You will receive a message with the same \
+#hashtags. A good start is to use your language (#es, #fr, #de, #ru...).
 
 Visit https://bottlebot.site for more informations.
 """
@@ -39,12 +38,10 @@ No more bottles!
 """
 
 BOTTLES_HELP = """
-You just received a message in a bottle. If you want, you can answer back and try to start a conversation.
+You just received a message. To start a conversation, use the reply feature of your messaging app on this message.
 
-Or you will not, because this is not the person you want to talk with. But that does not mean this person can not be \
-a nice person to meet for other people! In order to create interesting spaces for everyone, we want to encourage \
-people who write long and interesting messages, which can lead to inspiring connections.
+If you do not want to answer, but think the person should be able to send more messages, send back the \
+empty bottle. Help people who write long and interesting messages, which can lead to inspiring connections.
 
-Therefore, whether you answer them or not, if you think this person should be able to send more messages, you can send \
-their bottle back. Or maybe this is just trash, and you will let the bottle sink in the sea, where you found it.
+You have 24 hours to answer, then the message will be lost.
 """
