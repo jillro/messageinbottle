@@ -30,8 +30,20 @@ class User:
 
     id: str
     created: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    bottles_updated: datetime = field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
     bottles: int = 5
     question: Optional[Question] = None
+    first_bottle: bool = False
+
+    def __post_init__(self):
+        if isinstance(self.question, dict):
+            self.question = Question(**self.question)
+        if isinstance(self.created, str):
+            self.created = datetime.fromisoformat(self.created)
+        if isinstance(self.bottles_updated, str):
+            self.created = datetime.fromisoformat(self.bottles_updated)
 
     def __repr__(self):
         return f"<User id={self.id}>"

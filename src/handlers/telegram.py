@@ -43,8 +43,8 @@ def message_model_from_telegram(telegram_object):
 
 
 class TelegramRequestHandler(BaseMessageHandler, BaseRequestHandler):
-    def get_message(self, event: dict) -> models.IncomingMessage:
-        update = json.loads(event["body"])
+    def get_message(self) -> models.IncomingMessage:
+        update = json.loads(self.event["body"])
 
         if "callback_query" in update:
             requests.post(

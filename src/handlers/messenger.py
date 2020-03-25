@@ -65,7 +65,8 @@ class MessengerRequestHandler(BaseRequestHandler):
 
 
 class MessengerMessageHandler(BaseMessageHandler):
-    def get_message(self, webhook_entry: dict) -> models.IncomingMessage:
+    def get_message(self) -> models.IncomingMessage:
+        webhook_entry = self.event
         if "messaging" not in webhook_entry:
             raise ValueError
 
