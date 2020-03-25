@@ -8,6 +8,7 @@ from botocore.exceptions import ClientError
 import messages
 import models
 from callbacks.utils import generate_status
+from interface import PostbackButton
 
 
 def dynamic(command):
@@ -34,7 +35,15 @@ def command(handler):
         )
         handler.bottles = 5
         return handler.reply_message(
-            messages.WELCOME + generate_status(handler), markdown=True
+            messages.WELCOME + generate_status(handler),
+            markdown=True,
+            buttons=[PostbackButton(text="Write my first message", payload="letsgo")],
+        )
+
+    if handler.message.text == "letsgo":
+        handler.set_question(models.Question("first_bottle", {}))
+        return handler.reply_message(
+            "Ok! Enter your first message. Remember you can use #hashtags."
         )
 
     if handler.message.text == "status":
@@ -42,6 +51,12 @@ def command(handler):
         handler.bottles = res["Item"]["bottles"]
 
         return handler.reply_message(generate_status(handler))
+
+    if handler.message.text == "new_bottle":
+        handler.set_question(models.Question("new_bottle", {}))
+        return handler.reply_message(
+            "Ok! Enter your new message. Remember you can use #hashtags."
+        )
 
     if (
         handler.message.text.startswith("sendbackbottle")
@@ -70,6 +85,25 @@ def command(handler):
             )
 
             return handler.reply_message("The bottle has been sent back! Thanks!")
+
+    if handler.message.text.startswith("reply") and (
+        len(handler.message.text.split("/")) in [2, 3]
+    ):
+        if len(handler.message.text.split("/")) == 3:
+            (base, tags, seq) = handler.message.text.split("/")
+            tags = unquote_plus(tags)
+            seq = int(seq)
+            sent_message_id = models.messages_table.get_item(
+                Key={"tags": tags, "seq": seq}
+            )["Item"]["sent_message_id"]
+        else:
+            (base, reply_id) = handler.message.text.split("/")
+            sent_message_id = models.replies_table.get_item(Key={"id": reply_id})[
+                "Item"
+            ]["replied_back"]
+
+        handler.set_question(models.Question("reply", {"reply_to": sent_message_id}))
+        return handler.reply_message("Type your reply :")
 
     return handler.reply_message(
         f"Unkown command\n\n`{handler.message.text}`", markdown=True

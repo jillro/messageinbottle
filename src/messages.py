@@ -6,7 +6,7 @@ STATUS = """
 WELCOME = """
 Welcome ! This is _Message in a bottle_ bot.
 
-Send a message to the bot. Someone will randomly get it, and you will get someone else message.
+Send a message to the bot. Someone else will get it, and you will get some previous user message.
 
 Write to specific channels using #hashtags in your message. You will receive a message with the same \
 #hashtags. A good start is to use your language (#es, #fr, #de, #ru...).
@@ -16,7 +16,7 @@ Visit https://bottlebot.site for more informations.
 
 NO_MESSAGE_EVER = """
 Sorry! No message was ever sent with this hashtags combination... but yours will be sent if \
-someone comes after you.
+someone visit those hashtags after you.
 """
 
 YOU_AGAIN = """
@@ -38,10 +38,12 @@ No more bottles!
 """
 
 BOTTLES_HELP = """
-You just received a message. To start a conversation, use the reply feature of your messaging app on this message.
+You just received a message from someone else. To start a conversation, you can :
+* click the reply button under the message
+* use the reply feature of your messaging app on this message (one click less)
 
-If you do not want to answer, but think the person should be able to send more messages, send back the \
-empty bottle. Help people who write long and interesting messages, which can lead to inspiring connections.
+If you do not want to answer, but you think the person should be able to send more messages, give back the \
+empty bottle. Please help people who write long and interesting messages, which can lead to inspiring connections.
 
-You have 24 hours to answer, then the message will be lost.
+To answer any message, you have 24 hours before it is lost.
 """

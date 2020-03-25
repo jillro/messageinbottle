@@ -33,6 +33,15 @@ class BaseMessageHandler:
 
         return message
 
+    def set_question(self, question: models.Question):
+        assert question.name in callbacks.text
+
+        models.users_table.update_item(
+            Key={"id": self.message.user_id},
+            UpdateExpression="SET question = :question",
+            ExpressionAttributeValues={":question": models.asddbdict(question)},
+        )
+
     def handle(self, event):
         self.event = event
         self.message = self.get_message(event)
@@ -42,4 +51,19 @@ class BaseMessageHandler:
         ):
             return callbacks.command(self)
 
-        return callbacks.text(self)
+        if self.message.reply_to is not None:
+            return callbacks.text["default_reply_to"](self)
+
+        item = models.users_table.update_item(
+            Key={"id": self.message.user_id},
+            UpdateExpression="SET question = :None",
+            ExpressionAttributeValues={":None": None},
+            ReturnValues="ALL_OLD",
+        )["Attributes"]
+
+        if "question" in item and isinstance(item["question"], dict):
+            return callbacks.text[item["question"]["name"]](
+                self, **item["question"]["params"]
+            )
+
+        return callbacks.text["default"](self)

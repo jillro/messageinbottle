@@ -17,6 +17,12 @@ APP_MESSENGER = "messenger"
 
 
 @dataclass
+class Question:
+    name: str
+    params: dict
+
+
+@dataclass
 class User:
     @classmethod
     def generate_id(cls, app: str, app_id: Any):
@@ -25,6 +31,7 @@ class User:
     id: str
     created: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     bottles: int = 5
+    question: Optional[Question] = None
 
     def __repr__(self):
         return f"<User id={self.id}>"

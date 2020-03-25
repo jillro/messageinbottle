@@ -70,50 +70,59 @@ def poll_message(tags, seq):
     )
 
 
-def text(handler: "BaseMessageHandler"):
-    if handler.message.reply_to is not None:
-        try:
-            item = models.replies_table.update_item(
-                Key={"id": handler.message.reply_to},
-                UpdateExpression="SET replied_back = :1",
-                ExpressionAttributeValues={":1": True},
-                ConditionExpression=Attr("replied_back").not_exists(),
-                ReturnValues="ALL_NEW",
-            )["Attributes"]
-        except ClientError as e:
-            if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
-                return handler.reply_message("You can only reply once per message.")
-            raise e
-        else:
-            if datetime.fromisoformat(item["datetime"]) + timedelta(
-                hours=23, minutes=59
-            ) < datetime.now(timezone.utc):
-                return handler.reply_message("You had 24 hours to reply, sorry !")
+def reply_handler(handler: "BaseMessageHandler", reply_to):
+    try:
+        item = models.replies_table.update_item(
+            Key={"id": reply_to},
+            UpdateExpression="SET replied_back = :1",
+            ExpressionAttributeValues={":1": True},
+            ConditionExpression=Attr("replied_back").not_exists(),
+            ReturnValues="ALL_NEW",
+        )["Attributes"]
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
+            return handler.reply_message("You can only reply once per message.")
+        raise e
+    else:
+        if datetime.fromisoformat(item["datetime"]) + timedelta(
+            hours=23, minutes=59
+        ) < datetime.now(timezone.utc):
+            return handler.reply_message("You had 24 hours to reply, sorry !")
 
-            sent_for = item["sent_for"]
+        sent_for = item["sent_for"]
 
-            reply = send_message(
-                models.SentMessage(
-                    id=None,
-                    user_id=sent_for,
-                    text=messages.REPLY_INTRO.format(
-                        handler.message.sender_display_name
-                    )
-                    + handler.message.text,
-                    raw={},
-                    reply_to=item["original_message_id"],
-                )
-            )
+        reply = send_message(
+            models.SentMessage(
+                id=None,
+                user_id=sent_for,
+                text=messages.REPLY_INTRO.format(handler.message.sender_display_name)
+                + handler.message.text,
+                raw={},
+                reply_to=item["original_message_id"],
+            ),
+            buttons=[
+                PostbackButton(text=f"↩️ Reply", payload=f"reply/{item['id']}",),
+                PostbackButton(text=" Send new bottle", payload=f"new_bottle"),
+            ],
+        )
 
-            return models.replies_table.put_item(
-                Item={
-                    "id": reply.id,
-                    "datetime": handler.message.datetime,
-                    "sent_for": handler.message.user_id,
-                    "original_message_id": handler.message.id,
-                }
-            )
+        models.replies_table.update_item(
+            Key={"id": reply_to},
+            UpdateExpression="SET replied_back = :1",
+            ExpressionAttributeValues={":1": reply.id},
+        )
 
+        return models.replies_table.put_item(
+            Item={
+                "id": reply.id,
+                "datetime": handler.message.datetime,
+                "sent_for": handler.message.user_id,
+                "original_message_id": handler.message.id,
+            }
+        )
+
+
+def new_bottle_handler(handler: "BaseMessageHandler", previous_question):
     if not remove_bottle(handler):
         return handler.reply_message(messages.NO_MORE_BOTTLE)
 
@@ -123,8 +132,14 @@ def text(handler: "BaseMessageHandler"):
 
     # if first message in channel, stop
     if handler.message.seq == 1:
-        handler.reply_message(messages.NO_MESSAGE_EVER + generate_status(handler))
-        return
+        handler.set_question(models.Question("new_bottle", {}))
+        handler.reply_message(
+            messages.NO_MESSAGE_EVER + generate_status(handler),
+            buttons=[
+                PostbackButton(text=" Send new bottle", payload=previous_question)
+            ],
+        )
+        return False
 
     # get the previous one
     response = models.messages_table.get_item(
@@ -134,30 +149,40 @@ def text(handler: "BaseMessageHandler"):
     if "Item" not in response:
         response = poll_message(handler.message.tags, handler.message.seq)
 
-    # if the previous one is from the same person, tell them
-    if handler.message.user_id == response["Item"]["user_id"]:
-        handler.reply_message(messages.YOU_AGAIN + generate_status(handler))
-        return
-
-    # update sent_to on previous item
     item = response["Item"]
-    models.messages_table.update_item(
-        Key={"tags": item["tags"], "seq": item["seq"]},
-        UpdateExpression="SET sent_to = :sent_to",
-        ExpressionAttributeValues={":sent_to": handler.message.user_id},
-    )
+
+    # if the previous one is from the same person, tell them
+    if handler.message.user_id == item["user_id"]:
+        handler.set_question(models.Question("new_bottle", {}))
+        handler.reply_message(
+            messages.YOU_AGAIN + generate_status(handler),
+            buttons=[
+                PostbackButton(text=" Send new bottle", payload=previous_question)
+            ],
+        )
+        return False
 
     text = messages.MESSAGE_INTRO.format(item["sender_display_name"]) + item["text"]
     reply = handler.reply_message(
         text + generate_status(handler),
         buttons=[
-            PostbackButton(text="⁉️ Help", payload="help"),
             PostbackButton(
-                text="💙 Send back bottle",
+                text="💙 Give empty bottle back",
                 payload=f"sendbackbottle/{quote_plus(item['tags'])}/{item['seq']}",
             ),
-            PostbackButton(text="🍾 How much bottle do I have ?", payload="status"),
+            PostbackButton(
+                text=f"↩️ Start a conversation",
+                payload=f"reply/{quote_plus(item['tags'])}/{item['seq']}",
+            ),
+            PostbackButton(text="🍾🌊 Write a new message", payload=f"new_bottle"),
         ],
+    )
+
+    # update sent_to on previous item
+    models.messages_table.update_item(
+        Key={"tags": item["tags"], "seq": item["seq"]},
+        UpdateExpression="SET sent_message_id = :sent_message_id",
+        ExpressionAttributeValues={":sent_message_id": reply.id},
     )
 
     models.replies_table.put_item(
@@ -168,3 +193,31 @@ def text(handler: "BaseMessageHandler"):
             "original_message_id": item["id"],
         }
     )
+
+    return True
+
+
+def first_bottle_handler(handler):
+    if new_bottle_handler(handler, "first_bottle"):
+        handler.reply_message("Other help")
+
+
+def default_handler(handler):
+    handler.reply_message(
+        "You must reply to a previous message or write a new message.",
+        buttons=[
+            PostbackButton(text="🍾🌊 Write a new message", payload=f"new_bottle"),
+            PostbackButton(text="⁉️ Help", payload="help"),
+        ],
+    )
+
+
+text = {
+    "reply": reply_handler,
+    "first_bottle": first_bottle_handler,
+    "new_bottle": lambda handler: new_bottle_handler(handler, "new_bottle"),
+    "default": default_handler,
+    "default_reply_to": lambda handler: reply_handler(
+        handler, handler.message.reply_to
+    ),
+}
