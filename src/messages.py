@@ -38,12 +38,14 @@ No more bottles!
 """
 
 BOTTLES_HELP = """
-You just received a message from someone else. To start a conversation, you can :
-* click the reply button under the message
-* use the reply feature of your messaging app on this message (one click less)
+You just received your first message. To start a conversation, you can :
+* click the dedicated button under the message
+* use the reply feature of your messaging app
 
-If you do not want to answer, but you think the person should be able to send more messages, give back the \
+Write your reply with care: you can only reply once per message.
+
+If you do not want to reply, but you think the person should be able to send more messages, give back the \
 empty bottle. Please help people who write long and interesting messages, which can lead to inspiring connections.
 
-To answer any message, you have 24 hours before it is lost.
+You have 24 hours to answer each message. Then, it is lost.
 """

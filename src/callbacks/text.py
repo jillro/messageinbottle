@@ -189,7 +189,7 @@ def new_bottle_handler(handler: "BaseMessageHandler"):
     )
 
     if not handler.user.first_bottle:
-        handler.reply_message("Other help")
+        handler.reply_message(messages.BOTTLES_HELP)
         models.users_table.update_item(
             Key={"id": handler.user.id},
             UpdateExpression="SET first_bottle = :True",
@@ -203,7 +203,6 @@ def default_handler(handler):
             "You must reply to a previous message or write a new message.",
             buttons=[
                 PostbackButton(text="🍾🌊 Write a new message", payload=f"new_bottle"),
-                PostbackButton(text="⁉️ Help", payload="help"),
             ],
         )
     else:
