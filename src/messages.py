@@ -1,6 +1,6 @@
 STATUS = """
 
-{bottles} 🍾
+(You have {bottles} 🍾 left!)
 """
 
 WELCOME = """

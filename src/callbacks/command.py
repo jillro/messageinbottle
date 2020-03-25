@@ -31,7 +31,7 @@ def command(handler):
 
     if handler.message.text == "start":
         return handler.reply_message(
-            messages.WELCOME + generate_status(handler),
+            messages.WELCOME,
             markdown=True,
             buttons=[
                 PostbackButton(text="📝🍾🌊 Write my first message", payload="letsgo")
