@@ -78,7 +78,7 @@ class BaseMessageHandler:
 
         if self.user.question is not None:
             return callbacks.text[self.user.question.name](
-                self, **self.user.question.params
+                self, **(self.user.question.params or dict())
             )
 
         return callbacks.text["default"](self)

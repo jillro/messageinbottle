@@ -19,7 +19,7 @@ APP_MESSENGER = "messenger"
 @dataclass
 class Question:
     name: str
-    params: dict
+    params: Optional[dict] = None
 
 
 @dataclass

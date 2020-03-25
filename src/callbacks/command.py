@@ -30,20 +30,24 @@ def command(handler):
         return handler.reply_message(messages.BOTTLES_HELP)
 
     if handler.message.text == "start":
-        models.users_table.put_item(
-            Item=models.asddbdict(models.User(id=handler.message.user_id))
-        )
-        handler.bottles = 5
         return handler.reply_message(
             messages.WELCOME + generate_status(handler),
             markdown=True,
-            buttons=[PostbackButton(text="Write my first message", payload="letsgo")],
+            buttons=[
+                PostbackButton(text="📝🍾🌊 Write my first message", payload="letsgo")
+            ],
         )
 
     if handler.message.text == "letsgo":
-        handler.set_question(models.Question("first_bottle", {}))
+        handler.set_question(models.Question("new_bottle"))
         return handler.reply_message(
             "Ok! Enter your first message. Remember you can use #hashtags."
+        )
+
+    if handler.message.text == "new_bottle":
+        handler.set_question(models.Question("new_bottle"))
+        return handler.reply_message(
+            "Ok! Enter your new message. Remember you can use #hashtags."
         )
 
     if handler.message.text == "status":
@@ -51,12 +55,6 @@ def command(handler):
         handler.bottles = res["Item"]["bottles"]
 
         return handler.reply_message(generate_status(handler))
-
-    if handler.message.text == "new_bottle":
-        handler.set_question(models.Question("new_bottle", {}))
-        return handler.reply_message(
-            "Ok! Enter your new message. Remember you can use #hashtags."
-        )
 
     if (
         handler.message.text.startswith("sendbackbottle")

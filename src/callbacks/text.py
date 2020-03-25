@@ -122,7 +122,7 @@ def reply_handler(handler: "BaseMessageHandler", reply_to):
         )
 
 
-def new_bottle_handler(handler: "BaseMessageHandler", previous_question):
+def new_bottle_handler(handler: "BaseMessageHandler"):
     if not remove_bottle(handler):
         return handler.reply_message(messages.NO_MORE_BOTTLE)
 
@@ -132,14 +132,11 @@ def new_bottle_handler(handler: "BaseMessageHandler", previous_question):
 
     # if first message in channel, stop
     if handler.message.seq == 1:
-        handler.set_question(models.Question("new_bottle", {}))
         handler.reply_message(
             messages.NO_MESSAGE_EVER + generate_status(handler),
-            buttons=[
-                PostbackButton(text=" Send new bottle", payload=previous_question)
-            ],
+            buttons=[PostbackButton(text=" Send new bottle", payload="new_bottle")],
         )
-        return False
+        return
 
     # get the previous one
     response = models.messages_table.get_item(
@@ -153,14 +150,11 @@ def new_bottle_handler(handler: "BaseMessageHandler", previous_question):
 
     # if the previous one is from the same person, tell them
     if handler.message.user_id == item["user_id"]:
-        handler.set_question(models.Question("new_bottle", {}))
         handler.reply_message(
             messages.YOU_AGAIN + generate_status(handler),
-            buttons=[
-                PostbackButton(text=" Send new bottle", payload=previous_question)
-            ],
+            buttons=[PostbackButton(text=" Send new bottle", payload="new_bottle")],
         )
-        return False
+        return
 
     text = messages.MESSAGE_INTRO.format(item["sender_display_name"]) + item["text"]
     reply = handler.reply_message(
@@ -174,7 +168,7 @@ def new_bottle_handler(handler: "BaseMessageHandler", previous_question):
                 text=f"↩️ Start a conversation",
                 payload=f"reply/{quote_plus(item['tags'])}/{item['seq']}",
             ),
-            PostbackButton(text="🍾🌊 Write a new message", payload=f"new_bottle"),
+            PostbackButton(text="📝🍾🌊 Write a new message", payload="new_bottle"),
         ],
     )
 
@@ -194,28 +188,36 @@ def new_bottle_handler(handler: "BaseMessageHandler", previous_question):
         }
     )
 
-    return True
-
-
-def first_bottle_handler(handler):
-    if new_bottle_handler(handler, "first_bottle"):
+    if not handler.user.first_bottle:
         handler.reply_message("Other help")
+        models.users_table.update_item(
+            Key={"id": handler.user.id},
+            UpdateExpression="SET first_bottle = :True",
+            ExpressionAttributeValues={":True": True},
+        )
 
 
 def default_handler(handler):
-    handler.reply_message(
-        "You must reply to a previous message or write a new message.",
-        buttons=[
-            PostbackButton(text="🍾🌊 Write a new message", payload=f"new_bottle"),
-            PostbackButton(text="⁉️ Help", payload="help"),
-        ],
-    )
+    if handler.user.first_bottle:
+        handler.reply_message(
+            "You must reply to a previous message or write a new message.",
+            buttons=[
+                PostbackButton(text="🍾🌊 Write a new message", payload=f"new_bottle"),
+                PostbackButton(text="⁉️ Help", payload="help"),
+            ],
+        )
+    else:
+        handler.reply_message(
+            "Not so quickly! Are you ready to write your first message?",
+            buttons=[
+                PostbackButton(text="🍾🌊 Write my first message", payload=f"new_bottle")
+            ],
+        )
 
 
 text = {
     "reply": reply_handler,
-    "first_bottle": first_bottle_handler,
-    "new_bottle": lambda handler: new_bottle_handler(handler, "new_bottle"),
+    "new_bottle": new_bottle_handler,
     "default": default_handler,
     "default_reply_to": lambda handler: reply_handler(
         handler, handler.message.reply_to
