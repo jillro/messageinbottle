@@ -8,6 +8,7 @@ from botocore.exceptions import ClientError
 
 import messages
 import models
+from callbacks import buttons
 from callbacks.utils import generate_status
 from interface import PostbackButton
 from senders import send_message
@@ -134,7 +135,7 @@ def new_bottle_handler(handler: "BaseMessageHandler"):
     if handler.message.seq == 1:
         handler.reply_message(
             messages.NO_MESSAGE_EVER + generate_status(handler),
-            buttons=[PostbackButton(text=" Send new bottle", payload="new_bottle")],
+            buttons=[buttons.new_bottle],
         )
         return
 
@@ -151,8 +152,7 @@ def new_bottle_handler(handler: "BaseMessageHandler"):
     # if the previous one is from the same person, tell them
     if handler.message.user_id == item["user_id"]:
         handler.reply_message(
-            messages.YOU_AGAIN + generate_status(handler),
-            buttons=[PostbackButton(text=" Send new bottle", payload="new_bottle")],
+            messages.YOU_AGAIN + generate_status(handler), buttons=[buttons.new_bottle],
         )
         return
 
@@ -168,7 +168,7 @@ def new_bottle_handler(handler: "BaseMessageHandler"):
                 text=f"↩️ Start a conversation",
                 payload=f"reply/{quote_plus(item['tags'])}/{item['seq']}",
             ),
-            PostbackButton(text="📝🍾🌊 Write a new message", payload="new_bottle"),
+            buttons.new_bottle,
         ],
     )
 
