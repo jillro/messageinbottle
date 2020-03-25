@@ -103,7 +103,7 @@ def reply_handler(handler: "BaseMessageHandler", reply_to):
             ),
             buttons=[
                 PostbackButton(text=f"↩️ Reply", payload=f"reply/{item['id']}",),
-                PostbackButton(text=" Send new bottle", payload=f"new_bottle"),
+                buttons.new_bottle,
             ],
         )
 
