@@ -8,4 +8,4 @@ class Button:
 
 @dataclass
 class PostbackButton(Button):
-    payload: str
+    command: str

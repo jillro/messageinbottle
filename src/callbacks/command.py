@@ -33,7 +33,7 @@ def command(handler):
             messages.WELCOME,
             markdown=True,
             buttons=[
-                PostbackButton(text="📝🍾🌊 Write my first message", payload="letsgo")
+                PostbackButton(text="📝🍾🌊 Write my first message", command="letsgo")
             ],
         )
 

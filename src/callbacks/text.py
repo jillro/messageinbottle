@@ -106,7 +106,7 @@ def reply_handler(handler: "BaseMessageHandler", reply_to):
                 reply_to=item["original_message_id"],
             ),
             buttons=[
-                PostbackButton(text=f"↩️ Reply", payload=f"reply/{item['id']}",),
+                PostbackButton(text=f"↩️ Reply", command=f"reply/{item['id']}",),
                 buttons.new_bottle,
             ],
         )
@@ -170,11 +170,11 @@ def new_bottle_handler(handler: "BaseMessageHandler"):
         buttons=[
             PostbackButton(
                 text="💙 Give empty bottle back",
-                payload=f"sendbackbottle/{quote_plus(item['tags'])}/{item['seq']}",
+                command=f"sendbackbottle/{quote_plus(item['tags'])}/{item['seq']}",
             ),
             PostbackButton(
                 text=f"↩️ Start a conversation",
-                payload=f"reply/{quote_plus(item['tags'])}/{item['seq']}",
+                command=f"reply/{quote_plus(item['tags'])}/{item['seq']}",
             ),
             buttons.new_bottle,
         ],
@@ -210,14 +210,14 @@ def default_handler(handler):
         handler.reply_message(
             "You must reply to a previous message or write a new message.",
             buttons=[
-                PostbackButton(text="🍾🌊 Write a new message", payload=f"new_bottle"),
+                PostbackButton(text="🍾🌊 Write a new message", command=f"new_bottle"),
             ],
         )
     else:
         handler.reply_message(
             "Not so quickly! Are you ready to write your first message?",
             buttons=[
-                PostbackButton(text="🍾🌊 Write my first message", payload=f"new_bottle")
+                PostbackButton(text="🍾🌊 Write my first message", command=f"new_bottle")
             ],
         )
 
