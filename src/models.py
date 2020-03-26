@@ -4,12 +4,16 @@ from typing import Any, Optional
 
 import boto3
 
+import settings
+
+prefix = settings.TABLE_PREFIX
+
 dynamodb = boto3.resource("dynamodb", region_name="eu-west-3")
-messages_table = dynamodb.Table("messageinabottle_messages")
-users_table = dynamodb.Table("messageinabottle_users")
-messages_seq_table = dynamodb.Table("messageinabottle_messages_seq")
-callbacks_table = dynamodb.Table("messageinabottle_callbacks")
-replies_table = dynamodb.Table("messageinabottle_replies")
+bottles_table = dynamodb.Table(f"{prefix}bottles")
+users_table = dynamodb.Table(f"{prefix}users")
+bottles_seq_table = dynamodb.Table(f"{prefix}bottles_seq")
+callbacks_table = dynamodb.Table(f"{prefix}callbacks")
+conversations_table = dynamodb.Table(f"{prefix}conversations")
 
 APP_TELEGRAM = "telegram"
 APP_MESSENGER = "messenger"

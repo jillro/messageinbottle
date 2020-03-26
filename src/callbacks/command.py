@@ -57,7 +57,7 @@ def command(handler):
         tags = unquote_plus(tags)
         seq = int(seq)
         try:
-            user_id = models.messages_table.update_item(
+            user_id = models.bottles_table.update_item(
                 Key={"tags": tags, "seq": seq},
                 UpdateExpression="SET bottle_back = :1",
                 ExpressionAttributeValues={":1": True},
@@ -84,12 +84,12 @@ def command(handler):
             (base, tags, seq) = handler.message.text.split("/")
             tags = unquote_plus(tags)
             seq = int(seq)
-            sent_message_id = models.messages_table.get_item(
+            sent_message_id = models.bottles_table.get_item(
                 Key={"tags": tags, "seq": seq}
             )["Item"]["sent_message_id"]
         else:
             (base, reply_id) = handler.message.text.split("/")
-            sent_message_id = models.replies_table.get_item(Key={"id": reply_id})[
+            sent_message_id = models.conversations_table.get_item(Key={"id": reply_id})[
                 "Item"
             ]["replied_back"]
 

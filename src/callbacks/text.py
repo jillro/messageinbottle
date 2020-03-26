@@ -71,14 +71,14 @@ def remove_bottle(handler: "BaseMessageHandler"):
     max_time=5,
 )
 def poll_message(tags, seq):
-    return models.messages_table.get_item(
+    return models.bottles_table.get_item(
         Key={"tags": tags, "seq": seq - 1}, ConsistentRead=True
     )
 
 
 def reply_handler(handler: "BaseMessageHandler", reply_to):
     try:
-        item = models.replies_table.update_item(
+        item = models.conversations_table.update_item(
             Key={"id": reply_to},
             UpdateExpression="SET replied_back = :1",
             ExpressionAttributeValues={":1": True},
@@ -112,13 +112,13 @@ def reply_handler(handler: "BaseMessageHandler", reply_to):
             ],
         )
 
-        models.replies_table.update_item(
+        models.conversations_table.update_item(
             Key={"id": reply_to},
             UpdateExpression="SET replied_back = :1",
             ExpressionAttributeValues={":1": reply.id},
         )
 
-        return models.replies_table.put_item(
+        return models.conversations_table.put_item(
             Item={
                 "id": reply.id,
                 "datetime": handler.message.datetime,
@@ -138,7 +138,7 @@ def new_bottle_handler(handler: "BaseMessageHandler"):
 
     # update counter and store message
     handler.message.set_seq()
-    models.messages_table.put_item(Item=models.asddbdict(handler.message))
+    models.bottles_table.put_item(Item=models.asddbdict(handler.message))
 
     # if first message in channel, stop
     if handler.message.seq == 1:
@@ -149,7 +149,7 @@ def new_bottle_handler(handler: "BaseMessageHandler"):
         return
 
     # get the previous one
-    response = models.messages_table.get_item(
+    response = models.bottles_table.get_item(
         Key={"tags": handler.message.tags, "seq": handler.message.seq - 1}
     )
 
@@ -182,13 +182,13 @@ def new_bottle_handler(handler: "BaseMessageHandler"):
     )
 
     # update sent_to on previous item
-    models.messages_table.update_item(
+    models.bottles_table.update_item(
         Key={"tags": item["tags"], "seq": item["seq"]},
         UpdateExpression="SET sent_message_id = :sent_message_id",
         ExpressionAttributeValues={":sent_message_id": reply.id},
     )
 
-    models.replies_table.put_item(
+    models.conversations_table.put_item(
         Item={
             "id": reply.id,
             "datetime": reply.datetime,
