@@ -17,7 +17,7 @@ FB_PAGE_ID = env("FB_PAGE_ID")
 FB_PAGE_TOKEN = env("FB_PAGE_TOKEN")
 TELEGRAM_TOKEN = env("TELEGRAM_TOKEN")
 TELEGRAM_API = "https://api.telegram.org/bot" + TELEGRAM_TOKEN + "/"
-TABLE_PREFIX = "messageinbottle_dev_" if DEV else "messageinbottle_"
+TABLE_PREFIX = "messageinbottle_dev_" if DEV else "messageinbottle_prod_"
 
 if DEV:
     logging.basicConfig(level=logging.DEBUG)
