@@ -128,6 +128,10 @@ def reply_handler(handler: "BaseMessageHandler", reply_to):
 
 
 def new_bottle_handler(handler: "BaseMessageHandler"):
+    if len(handler.message.text) < 50:
+        handler.set_question(models.Question("new_bottle"))
+        return handler.reply_message(messages.TOO_SHORT)
+
     if not remove_bottle(handler):
         return handler.reply_message(messages.NO_MORE_BOTTLE)
 

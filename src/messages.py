@@ -49,3 +49,11 @@ empty bottle. Please help people who write long and interesting messages, which 
 
 You have 24 hours to answer each message. Then, it is lost.
 """
+
+
+TOO_SHORT = """
+A good message is no less than 50 characters. Remember, this is the only thing the other person will know about you! \
+To help you, #hashtags do count in the 50 characters.
+
+Please write your message again :
+"""
