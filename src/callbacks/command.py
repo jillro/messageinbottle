@@ -7,7 +7,6 @@ from botocore.exceptions import ClientError
 
 import messages
 import models
-from callbacks.utils import generate_status
 from interface import PostbackButton
 
 
@@ -49,12 +48,6 @@ def command(handler):
         return handler.reply_message(
             "Ok! Enter your new message. Remember you can use #hashtags."
         )
-
-    if handler.message.text == "status":
-        res = models.users_table.get_item(Key={"id": handler.message.user_id})
-        handler.bottles = res["Item"]["bottles"]
-
-        return handler.reply_message(generate_status(handler))
 
     if (
         handler.message.text.startswith("sendbackbottle")
