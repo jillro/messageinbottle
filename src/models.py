@@ -43,7 +43,7 @@ class User:
         if isinstance(self.created, str):
             self.created = datetime.fromisoformat(self.created)
         if isinstance(self.bottles_updated, str):
-            self.created = datetime.fromisoformat(self.bottles_updated)
+            self.bottles_updated = datetime.fromisoformat(self.bottles_updated)
 
     def __repr__(self):
         return f"<User id={self.id}>"

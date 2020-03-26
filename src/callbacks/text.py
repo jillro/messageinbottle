@@ -25,34 +25,38 @@ def remove_bottle(handler: "BaseMessageHandler"):
 
     now = datetime.now(timezone.utc)
 
-    handler.bottles = 0
-
     try:
-        handler.bottles = models.users_table.update_item(
+        models.users_table.update_item(
             Key={"id": handler.message.user_id},
             UpdateExpression="SET bottles = bottles - :1, bottles_updated = :now",
             ExpressionAttributeValues={":1": 1, ":now": now.isoformat()},
-            ReturnValues="UPDATED_NEW",  # TODO remove
             ConditionExpression=Attr("bottles").gt(0),
-        )["Attributes"]["bottles"]
+        )
+        handler.user.bottles = handler.user.bottles - 1
+        handler.user.bottles_updated = now
     except ClientError as e:
         if not e.response["Error"]["Code"] == "ConditionalCheckFailedException":
             raise e
 
-        try:
-            models.users_table.update_item(
-                Key={"id": handler.message.user_id},
-                UpdateExpression="SET bottles_updated = :now",
-                ExpressionAttributeValues={":now": now.isoformat()},
-                ConditionExpression=Attr("bottles_updated").lt(
-                    (now - timedelta(hours=12)).isoformat()
-                ),
-            )
-        except ClientError as e:
-            if not e.response["Error"]["Code"] == "ConditionalCheckFailedException":
-                raise e
+        accumulation_duration = now - handler.user.bottles_updated
+        new_bottles = 0
+        while accumulation_duration > timedelta(hours=1):
+            accumulation_duration = accumulation_duration / 2
+            new_bottles = new_bottles + 1
 
+        if new_bottles == 0:
             return False
+
+        models.users_table.update_item(
+            Key={"id": handler.message.user_id},
+            UpdateExpression="SET bottles = :bottles, bottles_updated = :now",
+            ExpressionAttributeValues={
+                ":bottles": new_bottles - 1,
+                ":now": now.isoformat(),
+            },
+        )
+        handler.user.bottles = new_bottles - 1
+        handler.user.bottles_updated = now
 
     return True
 
