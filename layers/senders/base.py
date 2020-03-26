@@ -1,12 +1,12 @@
 from typing import Optional
 
-import models
+import layers.messages
 
 
 class BaseSender:
     def send_message(
         self,
-        message: models.SentMessage,
+        message: layers.messages.SentMessage,
         markdown: bool = False,
         buttons: Optional[list] = None,
     ) -> (str, dict):

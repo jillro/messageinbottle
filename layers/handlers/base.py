@@ -2,8 +2,9 @@ import logging
 from typing import Optional
 
 import callbacks
+import layers.messages
 import models
-from senders import send_message
+from layers.senders import send_message
 
 logger = logging.getLogger(__name__)
 
@@ -17,9 +18,9 @@ class BaseMessageHandler:
     OK_RESPONSE = {"statusCode": 200}
     FORDIDDEN_RESPONSE = {"statusCode": 403}
     user: models.User = None
-    message: models.IncomingMessage = None
+    message: layers.messages.IncomingMessage = None
 
-    def get_message(self) -> models.IncomingMessage:
+    def get_message(self) -> layers.messages.IncomingMessage:
         raise NotImplementedError
 
     def get_user(self):
@@ -36,8 +37,8 @@ class BaseMessageHandler:
 
     def reply_message(
         self, text: str, markdown: bool = False, buttons: Optional[list] = None
-    ) -> models.SentMessage:
-        message = models.SentMessage(
+    ) -> layers.messages.SentMessage:
+        message = layers.messages.SentMessage(
             id=None, user_id=self.message.user_id, text=text, raw={}
         )
 
@@ -59,8 +60,8 @@ class BaseMessageHandler:
         self.message = self.get_message()
         self.user = self.get_user()
 
-        if isinstance(self.message, models.ButtonCallback) or isinstance(
-            self.message, models.Command
+        if isinstance(self.message, layers.messages.ButtonCallback) or isinstance(
+            self.message, layers.messages.Command
         ):
             return callbacks.command(self)
 

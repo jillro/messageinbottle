@@ -5,6 +5,7 @@ from typing import Optional
 import requests
 from requests import HTTPError
 
+import layers.messages
 import models
 from callbacks.command import dynamic
 from settings import TELEGRAM_API
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 class TelegramSender:
     def send_message(
         self,
-        message: models.SentMessage,
+        message: layers.messages.SentMessage,
         markdown: bool = False,
         buttons: Optional[list] = None,
     ):
@@ -37,9 +38,9 @@ class TelegramSender:
                         [
                             {
                                 "text": button.text,
-                                "callback_data": button.payload
-                                if len(button.payload) < 65
-                                else dynamic(button.payload),
+                                "callback_data": button.command
+                                if len(button.command) < 65
+                                else dynamic(button.command),
                             }
                         ]
                         for button in buttons
@@ -67,7 +68,7 @@ class TelegramSender:
         result = res.json()["result"]
 
         return (
-            models.SentMessage.generate_id(
+            layers.messages.SentMessage.generate_id(
                 app=models.APP_TELEGRAM,
                 app_id=f"{result['chat']['id']} {result['message_id']}",
             ),

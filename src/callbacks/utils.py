@@ -1,5 +1,5 @@
-import messages
+import strings
 
 
 def generate_status(handler):
-    return messages.STATUS.format(bottles=handler.user.bottles)
+    return strings.STATUS.format(bottles=handler.user.bottles)

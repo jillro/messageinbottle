@@ -5,9 +5,10 @@ import logging
 import requests
 from requests import HTTPError
 
+import layers.messages
 import models
-from exceptions import ForbiddenError, EarlyResponseException
-from handlers import BaseMessageHandler, BaseRequestHandler
+from layers.exceptions import ForbiddenError, EarlyResponseException
+from layers.handlers import BaseMessageHandler, BaseRequestHandler
 from settings import FB_VERIFY_TOKEN, FB_APP_SECRET, FB_PAGE_TOKEN
 
 logger = logging.getLogger(__name__)
@@ -65,7 +66,7 @@ class MessengerRequestHandler(BaseRequestHandler):
 
 
 class MessengerMessageHandler(BaseMessageHandler):
-    def get_message(self) -> models.IncomingMessage:
+    def get_message(self) -> layers.messages.IncomingMessage:
         webhook_entry = self.event
         if "messaging" not in webhook_entry:
             raise ValueError
@@ -73,7 +74,7 @@ class MessengerMessageHandler(BaseMessageHandler):
         messaging_entry = webhook_entry["messaging"][0]
 
         if "postback" in messaging_entry:
-            return models.ButtonCallback(
+            return layers.messages.ButtonCallback(
                 id=None,
                 user_id=models.User.generate_id(
                     app=models.APP_MESSENGER, app_id=messaging_entry["sender"]["id"]
@@ -96,7 +97,7 @@ class MessengerMessageHandler(BaseMessageHandler):
             raise ValueError
 
         reply_to = (
-            models.Message.generate_id(
+            layers.messages.Message.generate_id(
                 app=models.APP_MESSENGER,
                 app_id=f"{messaging_entry['message']['reply_to']['mid']}",
             )
@@ -120,8 +121,8 @@ class MessengerMessageHandler(BaseMessageHandler):
                 logger.error(res.text)
             raise e
 
-        return models.IncomingMessage(
-            id=models.IncomingMessage.generate_id(
+        return layers.messages.IncomingMessage(
+            id=layers.messages.IncomingMessage.generate_id(
                 app=models.APP_MESSENGER, app_id=messaging_entry["message"]["mid"]
             ),
             user_id=models.User.generate_id(

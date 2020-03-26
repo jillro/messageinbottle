@@ -5,9 +5,9 @@ import backoff
 from boto3.dynamodb.conditions import Attr
 from botocore.exceptions import ClientError
 
-import messages
+import strings
 import models
-from interface import PostbackButton
+from layers.interface import PostbackButton
 
 
 def dynamic(command):
@@ -26,11 +26,11 @@ def command(handler):
         handler.message.text = reverse(handler.message.text[1:])
 
     if handler.message.text == "help":
-        return handler.reply_message(messages.BOTTLES_HELP)
+        return handler.reply_message(strings.BOTTLES_HELP)
 
     if handler.message.text == "start":
         return handler.reply_message(
-            messages.WELCOME,
+            strings.WELCOME,
             markdown=True,
             buttons=[
                 PostbackButton(text="📝🍾🌊 Write my first message", command="letsgo")

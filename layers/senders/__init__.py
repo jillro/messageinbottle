@@ -1,12 +1,15 @@
 from typing import Optional
 
+import layers.messages
 import models
-from senders.messenger import MessengerSender
-from senders.telegram import TelegramSender
+from layers.senders.messenger import MessengerSender
+from layers.senders.telegram import TelegramSender
 
 
 def send_message(
-    message: models.SentMessage, markdown: bool = False, buttons: Optional[list] = None
+    message: layers.messages.SentMessage,
+    markdown: bool = False,
+    buttons: Optional[list] = None,
 ):
     senders = {
         models.APP_MESSENGER: MessengerSender,

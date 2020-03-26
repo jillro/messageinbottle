@@ -1,11 +1,11 @@
 import json
 import logging
-from typing import Optional
 
 import requests
 
+import layers.messages
 import models
-from handlers import BaseMessageHandler, BaseRequestHandler
+from layers.handlers import BaseMessageHandler, BaseRequestHandler
 from settings import TELEGRAM_API
 
 logger = logging.getLogger(__name__)
@@ -16,10 +16,10 @@ def message_model_from_telegram(telegram_object):
         raise ValueError
 
     is_command = telegram_object["text"].startswith("/")
-    _class = models.Command if is_command else models.IncomingMessage
+    _class = layers.messages.Command if is_command else layers.messages.IncomingMessage
 
     reply_to = (
-        models.Message.generate_id(
+        layers.messages.Message.generate_id(
             app=models.APP_TELEGRAM,
             app_id=f"{telegram_object['reply_to_message']['chat']['id']} {telegram_object['reply_to_message']['message_id']}",
         )
@@ -28,7 +28,7 @@ def message_model_from_telegram(telegram_object):
     )
 
     return _class(
-        id=models.Message.generate_id(
+        id=layers.messages.Message.generate_id(
             app=models.APP_TELEGRAM,
             app_id=f"{telegram_object['chat']['id']} {telegram_object['message_id']}",
         ),
@@ -43,7 +43,7 @@ def message_model_from_telegram(telegram_object):
 
 
 class TelegramRequestHandler(BaseMessageHandler, BaseRequestHandler):
-    def get_message(self) -> models.IncomingMessage:
+    def get_message(self) -> layers.messages.IncomingMessage:
         update = json.loads(self.event["body"])
 
         if "callback_query" in update:
@@ -52,7 +52,7 @@ class TelegramRequestHandler(BaseMessageHandler, BaseRequestHandler):
                 data={"callback_query_id": update["callback_query"]["id"]},
             )
 
-            return models.ButtonCallback(
+            return layers.messages.ButtonCallback(
                 id=None,
                 user_id=models.User.generate_id(
                     app=models.APP_TELEGRAM,

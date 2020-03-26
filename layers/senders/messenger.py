@@ -3,9 +3,10 @@ from typing import Optional
 
 import requests
 
+import layers.messages
 import models
 from requests import HTTPError
-from senders.base import BaseSender
+from layers.senders.base import BaseSender
 from settings import FB_PAGE_TOKEN
 
 logger = logging.getLogger(__name__)
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 class MessengerSender(BaseSender):
     def send_message(
         self,
-        message: models.SentMessage,
+        message: layers.messages.SentMessage,
         markdown: bool = False,
         buttons: Optional[list] = None,
     ):
@@ -35,7 +36,7 @@ class MessengerSender(BaseSender):
                             {
                                 "type": "postback",
                                 "title": button.text,
-                                "payload": button.payload,
+                                "payload": button.command,
                             }
                             for button in buttons
                         ],
@@ -64,7 +65,7 @@ class MessengerSender(BaseSender):
             raise e
 
         return (
-            models.SentMessage.generate_id(
+            layers.messages.SentMessage.generate_id(
                 app=models.APP_MESSENGER, app_id=res.json()["message_id"]
             ),
             post_data,

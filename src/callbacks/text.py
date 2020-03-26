@@ -6,15 +6,16 @@ import backoff as backoff
 from boto3.dynamodb.conditions import Attr
 from botocore.exceptions import ClientError
 
-import messages
+import layers
+import strings
 import models
 from callbacks import buttons
 from callbacks.utils import generate_status
-from interface import PostbackButton
-from senders import send_message
+from layers.interface import PostbackButton
+from layers.senders import send_message
 
 if TYPE_CHECKING:
-    from handlers import BaseMessageHandler
+    from layers.handlers import BaseMessageHandler
 
 
 def remove_bottle(handler: "BaseMessageHandler"):
@@ -97,10 +98,10 @@ def reply_handler(handler: "BaseMessageHandler", reply_to):
         sent_for = item["sent_for"]
 
         reply = send_message(
-            models.SentMessage(
+            layers.messages.SentMessage(
                 id=None,
                 user_id=sent_for,
-                text=messages.REPLY_INTRO.format(handler.message.sender_display_name)
+                text=strings.REPLY_INTRO.format(handler.message.sender_display_name)
                 + handler.message.text,
                 raw={},
                 reply_to=item["original_message_id"],
@@ -130,10 +131,10 @@ def reply_handler(handler: "BaseMessageHandler", reply_to):
 def new_bottle_handler(handler: "BaseMessageHandler"):
     if len(handler.message.text) < 50:
         handler.set_question(models.Question("new_bottle"))
-        return handler.reply_message(messages.TOO_SHORT)
+        return handler.reply_message(strings.TOO_SHORT)
 
     if not remove_bottle(handler):
-        return handler.reply_message(messages.NO_MORE_BOTTLE)
+        return handler.reply_message(strings.NO_MORE_BOTTLE)
 
     # update counter and store message
     handler.message.set_seq()
@@ -142,7 +143,7 @@ def new_bottle_handler(handler: "BaseMessageHandler"):
     # if first message in channel, stop
     if handler.message.seq == 1:
         handler.reply_message(
-            messages.NO_MESSAGE_EVER + generate_status(handler),
+            strings.NO_MESSAGE_EVER + generate_status(handler),
             buttons=[buttons.new_bottle],
         )
         return
@@ -160,11 +161,11 @@ def new_bottle_handler(handler: "BaseMessageHandler"):
     # if the previous one is from the same person, tell them
     if handler.message.user_id == item["user_id"]:
         handler.reply_message(
-            messages.YOU_AGAIN + generate_status(handler), buttons=[buttons.new_bottle],
+            strings.YOU_AGAIN + generate_status(handler), buttons=[buttons.new_bottle],
         )
         return
 
-    text = messages.MESSAGE_INTRO.format(item["sender_display_name"]) + item["text"]
+    text = strings.MESSAGE_INTRO.format(item["sender_display_name"]) + item["text"]
     reply = handler.reply_message(
         text + generate_status(handler),
         buttons=[
@@ -197,7 +198,7 @@ def new_bottle_handler(handler: "BaseMessageHandler"):
     )
 
     if not handler.user.first_bottle:
-        handler.reply_message(messages.BOTTLES_HELP)
+        handler.reply_message(strings.BOTTLES_HELP)
         models.users_table.update_item(
             Key={"id": handler.user.id},
             UpdateExpression="SET first_bottle = :True",

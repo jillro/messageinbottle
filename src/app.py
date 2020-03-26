@@ -1,4 +1,4 @@
-from handlers import handle
+from layers.handlers import handle
 
 
 def lambda_handler(request, context):
