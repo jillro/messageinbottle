@@ -26,56 +26,56 @@ def command(handler):
         handler.message.text = reverse(handler.message.text[1:])
 
     if handler.message.text == "help":
-        return handler.reply_message(strings.BOTTLES_HELP)
+        return handler.reply_message(strings.BALLOONS_HELP)
 
     if handler.message.text == "start":
         return handler.reply_message(
             strings.WELCOME,
             markdown=True,
             buttons=[
-                PostbackButton(text="📝🍾🌊 Write my first message", command="letsgo")
+                PostbackButton(text="📝🎈☁️ Write my first message", command="letsgo")
             ],
         )
 
     if handler.message.text == "letsgo":
-        handler.set_question(models.Question("new_bottle"))
+        handler.set_question(models.Question("new_balloon"))
         return handler.reply_message(
             "Ok! Enter your first message. Remember you can use #hashtags."
         )
 
-    if handler.message.text == "new_bottle":
-        handler.set_question(models.Question("new_bottle"))
+    if handler.message.text == "new_balloon":
+        handler.set_question(models.Question("new_balloon"))
         return handler.reply_message(
             "Ok! Enter your new message. Remember you can use #hashtags."
         )
 
     if (
-        handler.message.text.startswith("sendbackbottle")
+        handler.message.text.startswith("sendfreeballoon")
         and len(handler.message.text.split("/")) == 3
     ):
         (base, tags, seq) = handler.message.text.split("/")
         tags = unquote_plus(tags)
         seq = int(seq)
         try:
-            user_id = models.bottles_table.update_item(
+            user_id = models.balloons_table.update_item(
                 Key={"tags": tags, "seq": seq},
-                UpdateExpression="SET bottle_back = :1",
+                UpdateExpression="SET balloon_back = :1",
                 ExpressionAttributeValues={":1": True},
-                ConditionExpression=Attr("bottle_back").not_exists(),
+                ConditionExpression=Attr("balloon_back").not_exists(),
                 ReturnValues="ALL_NEW",
             )["Attributes"]["user_id"]
         except ClientError as e:
             if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
-                return handler.reply_message("You have already sent back this bottle.")
+                return handler.reply_message("You have already gave a free balloon.")
             raise e
         else:
             models.users_table.update_item(
                 Key={"id": user_id},
-                UpdateExpression="SET bottles = bottles + :1",
+                UpdateExpression="SET balloons = balloons + :1",
                 ExpressionAttributeValues={":1": 1},
             )
 
-            return handler.reply_message("The bottle has been sent back! Thanks!")
+            return handler.reply_message("The balloon has been sent back! Thanks!")
 
     if handler.message.text.startswith("reply") and (
         len(handler.message.text.split("/")) in [2, 3]
@@ -84,7 +84,7 @@ def command(handler):
             (base, tags, seq) = handler.message.text.split("/")
             tags = unquote_plus(tags)
             seq = int(seq)
-            sent_message_id = models.bottles_table.get_item(
+            sent_message_id = models.balloons_table.get_item(
                 Key={"tags": tags, "seq": seq}
             )["Item"]["sent_message_id"]
         else:

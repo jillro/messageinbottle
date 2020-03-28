@@ -18,46 +18,46 @@ if TYPE_CHECKING:
     from layers.handlers import BaseMessageHandler
 
 
-def remove_bottle(handler: "BaseMessageHandler"):
-    # take a bottle from the user
-    # we first try to remove a bottle from the user by checking thay have more than 1
-    # of not, we check if last time a bottle was removed was more than 12 hours ago
-    # else, no more bottle
+def remove_balloon(handler: "BaseMessageHandler"):
+    # take a balloon from the user
+    # we first try to remove a balloon from the user by checking thay have more than 1
+    # of not, we check if last time a balloon was removed was more than 12 hours ago
+    # else, no more balloon
 
     now = datetime.now(timezone.utc)
 
     try:
         models.users_table.update_item(
             Key={"id": handler.message.user_id},
-            UpdateExpression="SET bottles = bottles - :1, bottles_updated = :now",
+            UpdateExpression="SET balloons = balloons - :1, balloons_updated = :now",
             ExpressionAttributeValues={":1": 1, ":now": now.isoformat()},
-            ConditionExpression=Attr("bottles").gt(0),
+            ConditionExpression=Attr("balloons").gt(0),
         )
-        handler.user.bottles = handler.user.bottles - 1
-        handler.user.bottles_updated = now
+        handler.user.balloons = handler.user.balloons - 1
+        handler.user.balloons_updated = now
     except ClientError as e:
         if not e.response["Error"]["Code"] == "ConditionalCheckFailedException":
             raise e
 
-        accumulation_duration = now - handler.user.bottles_updated
-        new_bottles = 0
+        accumulation_duration = now - handler.user.balloons_updated
+        new_balloons = 0
         while accumulation_duration > timedelta(hours=1):
             accumulation_duration = accumulation_duration / 2
-            new_bottles = new_bottles + 1
+            new_balloons = new_balloons + 1
 
-        if new_bottles == 0:
+        if new_balloons == 0:
             return False
 
         models.users_table.update_item(
             Key={"id": handler.message.user_id},
-            UpdateExpression="SET bottles = :bottles, bottles_updated = :now",
+            UpdateExpression="SET balloons = :balloons, balloons_updated = :now",
             ExpressionAttributeValues={
-                ":bottles": new_bottles - 1,
+                ":balloons": new_balloons - 1,
                 ":now": now.isoformat(),
             },
         )
-        handler.user.bottles = new_bottles - 1
-        handler.user.bottles_updated = now
+        handler.user.balloons = new_balloons - 1
+        handler.user.balloons_updated = now
 
     return True
 
@@ -71,7 +71,7 @@ def remove_bottle(handler: "BaseMessageHandler"):
     max_time=5,
 )
 def poll_message(tags, seq):
-    return models.bottles_table.get_item(
+    return models.balloons_table.get_item(
         Key={"tags": tags, "seq": seq - 1}, ConsistentRead=True
     )
 
@@ -108,7 +108,7 @@ def reply_handler(handler: "BaseMessageHandler", reply_to):
             ),
             buttons=[
                 PostbackButton(text=f"↩️ Reply", command=f"reply/{item['id']}",),
-                buttons.new_bottle,
+                buttons.new_balloon,
             ],
         )
 
@@ -128,28 +128,28 @@ def reply_handler(handler: "BaseMessageHandler", reply_to):
         )
 
 
-def new_bottle_handler(handler: "BaseMessageHandler"):
+def new_balloon_handler(handler: "BaseMessageHandler"):
     if len(handler.message.text) < 50:
-        handler.set_question(models.Question("new_bottle"))
+        handler.set_question(models.Question("new_balloon"))
         return handler.reply_message(strings.TOO_SHORT)
 
-    if not remove_bottle(handler):
-        return handler.reply_message(strings.NO_MORE_BOTTLE)
+    if not remove_balloon(handler):
+        return handler.reply_message(strings.NO_MORE_balloon)
 
     # update counter and store message
     handler.message.set_seq()
-    models.bottles_table.put_item(Item=models.asddbdict(handler.message))
+    models.balloons_table.put_item(Item=models.asddbdict(handler.message))
 
     # if first message in channel, stop
     if handler.message.seq == 1:
         handler.reply_message(
             strings.NO_MESSAGE_EVER + generate_status(handler),
-            buttons=[buttons.new_bottle],
+            buttons=[buttons.new_balloon],
         )
         return
 
     # get the previous one
-    response = models.bottles_table.get_item(
+    response = models.balloons_table.get_item(
         Key={"tags": handler.message.tags, "seq": handler.message.seq - 1}
     )
 
@@ -161,7 +161,7 @@ def new_bottle_handler(handler: "BaseMessageHandler"):
     # if the previous one is from the same person, tell them
     if handler.message.user_id == item["user_id"]:
         handler.reply_message(
-            strings.YOU_AGAIN + generate_status(handler), buttons=[buttons.new_bottle],
+            strings.YOU_AGAIN + generate_status(handler), buttons=[buttons.new_balloon],
         )
         return
 
@@ -170,19 +170,19 @@ def new_bottle_handler(handler: "BaseMessageHandler"):
         text + generate_status(handler),
         buttons=[
             PostbackButton(
-                text="💙 Give empty bottle back",
-                command=f"sendbackbottle/{quote_plus(item['tags'])}/{item['seq']}",
+                text="💙 Give a free balloon",
+                command=f"sendbackballoon/{quote_plus(item['tags'])}/{item['seq']}",
             ),
             PostbackButton(
                 text=f"↩️ Start a conversation",
                 command=f"reply/{quote_plus(item['tags'])}/{item['seq']}",
             ),
-            buttons.new_bottle,
+            buttons.new_balloon,
         ],
     )
 
     # update sent_to on previous item
-    models.bottles_table.update_item(
+    models.balloons_table.update_item(
         Key={"tags": item["tags"], "seq": item["seq"]},
         UpdateExpression="SET sent_message_id = :sent_message_id",
         ExpressionAttributeValues={":sent_message_id": reply.id},
@@ -197,35 +197,37 @@ def new_bottle_handler(handler: "BaseMessageHandler"):
         }
     )
 
-    if not handler.user.first_bottle:
-        handler.reply_message(strings.BOTTLES_HELP)
+    if not handler.user.first_balloon:
+        handler.reply_message(strings.BALLOONS_HELP)
         models.users_table.update_item(
             Key={"id": handler.user.id},
-            UpdateExpression="SET first_bottle = :True",
+            UpdateExpression="SET first_balloon = :True",
             ExpressionAttributeValues={":True": True},
         )
 
 
 def default_handler(handler):
-    if handler.user.first_bottle:
+    if handler.user.first_balloon:
         handler.reply_message(
             "You must reply to a previous message or write a new message.",
             buttons=[
-                PostbackButton(text="🍾🌊 Write a new message", command=f"new_bottle"),
+                PostbackButton(text="🎈☁️ Write a new message", command=f"new_balloon"),
             ],
         )
     else:
         handler.reply_message(
             "Not so quickly! Are you ready to write your first message?",
             buttons=[
-                PostbackButton(text="🍾🌊 Write my first message", command=f"new_bottle")
+                PostbackButton(
+                    text="🎈☁️ Write my first message", command=f"new_balloon"
+                )
             ],
         )
 
 
 text = {
     "reply": reply_handler,
-    "new_bottle": new_bottle_handler,
+    "new_balloon": new_balloon_handler,
     "default": default_handler,
     "default_reply_to": lambda handler: reply_handler(
         handler, handler.message.reply_to

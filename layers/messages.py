@@ -4,7 +4,7 @@ from typing import Optional, Any
 
 from botocore.exceptions import ClientError
 
-from models import bottles_seq_table
+from models import balloons_seq_table
 
 
 @dataclass
@@ -40,7 +40,7 @@ class IncomingMessage(Message):
 
     def set_seq(self):
         try:
-            self.seq = bottles_seq_table.update_item(
+            self.seq = balloons_seq_table.update_item(
                 Key={"tags": self.tags},
                 UpdateExpression="SET seq = if_not_exists (seq, :0) + :1",
                 ExpressionAttributeValues={":0": 0, ":1": 1},
