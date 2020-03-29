@@ -1,7 +1,7 @@
 import logging
 import os
 
-DEV = not os.environ.get("PRODUCTION", False)
+DEV = not os.environ.get("PRODUCTION", "false").lower() == "true"
 
 
 def env(key, default=None):
