@@ -8,8 +8,8 @@ Welcome ! This is Helium bot.
 
 Send a message to the bot. Someone else will get it, and you will get some previous user message.
 
-Write to specific channels using #hashtags in your message. You will receive a message with the same \
-#hashtags. A good start is to use your language (#es, #fr, #de, #ru...).
+Write to specific channels using hashtags in your message. You will receive a message with the same \
+hashtags. A good start is to use your language (#es, #fr, #de, #ru...).
 
 Visit https://heliumbot.site for more informations.
 """
@@ -53,7 +53,7 @@ You have 24 hours to answer each message. Then, it is lost.
 
 TOO_SHORT = """
 A good message is no less than 50 characters. Remember, this is the only thing the other person will know about you! \
-To help you, #hashtags do count in the 50 characters.
+To help you, hashtags do count in the 50 characters.
 
 Please write your message again :
 """

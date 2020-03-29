@@ -40,13 +40,13 @@ def command(handler):
     if handler.message.text == "letsgo":
         handler.set_question(models.Question("new_balloon"))
         return handler.reply_message(
-            "Ok! Enter your first message. Remember you can use #hashtags."
+            "Ok! Enter your first message. Remember you can use hashtags."
         )
 
     if handler.message.text == "new_balloon":
         handler.set_question(models.Question("new_balloon"))
         return handler.reply_message(
-            "Ok! Enter your new message. Remember you can use #hashtags."
+            "Ok! Enter your new message. Remember you can use hashtags."
         )
 
     if (
