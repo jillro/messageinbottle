@@ -213,6 +213,7 @@ def default_handler(handler):
             "You must reply to a previous message or write a new message.",
             buttons=[
                 PostbackButton(text="🎈☁️ Write a new message", command=f"new_balloon"),
+                buttons.trending,
             ],
         )
     else:
@@ -221,7 +222,8 @@ def default_handler(handler):
             buttons=[
                 PostbackButton(
                     text="🎈☁️ Write my first message", command=f"new_balloon"
-                )
+                ),
+                buttons.trending,
             ],
         )
 
