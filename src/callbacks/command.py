@@ -113,7 +113,9 @@ def command(handler):
         )
         items.sort(key=lambda item: item["seq"], reverse=True)
 
-        trendings = "\n".join(f"#{item['tags']}" for item in items)
+        trendings = "\n".join(
+            f"{c} - #{item['tags'].replace(' ', ' #')}" for c, item in enumerate(items)
+        )
         return handler.reply_message(
             f"Here are the trending hashtags:\n{trendings}",
             buttons=[buttons.new_balloon],
