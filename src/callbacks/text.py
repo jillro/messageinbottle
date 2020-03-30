@@ -171,7 +171,7 @@ def new_balloon_handler(handler: "BaseMessageHandler"):
         buttons=[
             PostbackButton(
                 text="💙 Give a free balloon",
-                command=f"sendbackballoon/{quote_plus(item['tags'])}/{item['seq']}",
+                command=f"sendfreeballoon/{quote_plus(item['tags'])}/{item['seq']}",
             ),
             PostbackButton(
                 text=f"↩️ Start a conversation",

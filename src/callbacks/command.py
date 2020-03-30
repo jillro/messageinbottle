@@ -51,8 +51,8 @@ def command(handler):
 
     if (
         handler.message.text.startswith("sendfreeballoon")
-        and len(handler.message.text.split("/")) == 3
-    ):
+        or handler.message.text.startswith("sendbackballoon")
+    ) and len(handler.message.text.split("/")) == 3:
         (base, tags, seq) = handler.message.text.split("/")
         tags = unquote_plus(tags)
         seq = int(seq)
