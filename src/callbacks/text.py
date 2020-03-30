@@ -144,7 +144,7 @@ def new_balloon_handler(handler: "BaseMessageHandler"):
     if handler.message.seq == 1:
         handler.reply_message(
             strings.NO_MESSAGE_EVER + generate_status(handler),
-            buttons=[buttons.new_balloon],
+            buttons=[buttons.new_balloon, buttons.trending],
         )
         return
 
@@ -161,7 +161,8 @@ def new_balloon_handler(handler: "BaseMessageHandler"):
     # if the previous one is from the same person, tell them
     if handler.message.user_id == item["user_id"]:
         handler.reply_message(
-            strings.YOU_AGAIN + generate_status(handler), buttons=[buttons.new_balloon],
+            strings.YOU_AGAIN + generate_status(handler),
+            buttons=[buttons.new_balloon, buttons.trending],
         )
         return
 

@@ -8,6 +8,7 @@ from botocore.exceptions import ClientError
 
 import models
 import strings
+from callbacks import buttons
 from layers.interface import PostbackButton
 
 
@@ -34,7 +35,8 @@ def command(handler):
             strings.WELCOME,
             markdown=True,
             buttons=[
-                PostbackButton(text="📝🎈☁️ Write my first message", command="letsgo")
+                PostbackButton(text="📝🎈☁️ Write my first message", command="letsgo"),
+                buttons.trending,
             ],
         )
 
@@ -112,7 +114,10 @@ def command(handler):
         items.sort(key=lambda item: item["seq"], reverse=True)
 
         trendings = "\n".join(f"#{item['tags']}" for item in items)
-        return handler.reply_message(f"Here are the trending hashtags:\n{trendings}")
+        return handler.reply_message(
+            f"Here are the trending hashtags:\n{trendings}",
+            buttons=[buttons.new_balloon],
+        )
 
     return handler.reply_message(
         f"Unkown command\n\n`{handler.message.text}`", markdown=True
