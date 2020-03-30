@@ -1,12 +1,13 @@
+from datetime import timezone, datetime, timedelta
 from urllib.parse import unquote_plus
 from uuid import uuid4
 
 import backoff
-from boto3.dynamodb.conditions import Attr
+from boto3.dynamodb.conditions import Attr, Key
 from botocore.exceptions import ClientError
 
-import strings
 import models
+import strings
 from layers.interface import PostbackButton
 
 
@@ -95,6 +96,23 @@ def command(handler):
 
         handler.set_question(models.Question("reply", {"reply_to": sent_message_id}))
         return handler.reply_message("Type your reply :")
+
+    if handler.message.text.startswith("trending"):
+        items = list(
+            item
+            for i in range(7)
+            for item in models.balloons_seq_table.query(
+                IndexName="last_message",
+                KeyConditionExpression=Key("last_message_day").eq(
+                    (datetime.now(timezone.utc) - timedelta(days=i)).date().isoformat()
+                ),
+            )["Items"]
+            if item["tags"] != "world"
+        )
+        items.sort(key=lambda item: item["seq"], reverse=True)
+
+        trendings = "\n".join(f"#{item['tags']}" for item in items)
+        return handler.reply_message(f"Here are the trending hashtags:\n{trendings}")
 
     return handler.reply_message(
         f"Unkown command\n\n`{handler.message.text}`", markdown=True

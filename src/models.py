@@ -12,7 +12,9 @@ dynamodb = boto3.resource("dynamodb", region_name="eu-west-3")
 existing_tables = boto3.client("dynamodb").list_tables()["TableNames"]
 
 
-def get_or_create_table(table_name, primary_key=("id", "S"), sort_key=None):
+def get_or_create_table(
+    table_name, primary_key=("id", "S"), sort_key=None, extra_attr_def=None, **kwargs
+):
     if table_name in existing_tables:
         return dynamodb.Table(table_name)
 
@@ -23,18 +25,39 @@ def get_or_create_table(table_name, primary_key=("id", "S"), sort_key=None):
         attr_def.append({"AttributeName": sort_key[0], "AttributeType": sort_key[1]})
         key_def.append({"AttributeName": sort_key[0], "KeyType": "RANGE"})
 
+    if extra_attr_def is not None:
+        attr_def.extend(extra_attr_def)
+
     dynamodb.create_table(
         TableName=table_name,
         BillingMode="PAY_PER_REQUEST",
         AttributeDefinitions=attr_def,
         KeySchema=key_def,
+        **kwargs,
     )
 
     return dynamodb.Table(table_name)
 
 
 balloons_table = get_or_create_table(f"{prefix}balloons", ("tags", "S"), ("seq", "N"))
-balloons_seq_table = get_or_create_table(f"{prefix}balloons_seq", ("tags", "S"))
+balloons_seq_table = get_or_create_table(
+    f"{prefix}balloons_seq",
+    ("tags", "S"),
+    extra_attr_def=[
+        {"AttributeName": "last_message", "AttributeType": "S"},
+        {"AttributeName": "last_message_day", "AttributeType": "S"},
+    ],
+    GlobalSecondaryIndexes=[
+        {
+            "IndexName": "last_message",
+            "KeySchema": [
+                {"AttributeName": "last_message_day", "KeyType": "HASH"},
+                {"AttributeName": "last_message", "KeyType": "RANGE"},
+            ],
+            "Projection": {"ProjectionType": "ALL"},
+        }
+    ],
+)
 callbacks_table = get_or_create_table(f"{prefix}callbacks")
 users_table = get_or_create_table(f"{prefix}users")
 conversations_table = get_or_create_table(f"{prefix}conversations")

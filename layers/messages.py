@@ -42,8 +42,15 @@ class IncomingMessage(Message):
         try:
             self.seq = balloons_seq_table.update_item(
                 Key={"tags": self.tags},
-                UpdateExpression="SET seq = if_not_exists (seq, :0) + :1",
-                ExpressionAttributeValues={":0": 0, ":1": 1},
+                UpdateExpression="SET seq = if_not_exists (seq, :0) + :1, last_message_day = :last_message_day, last_message = :last_message",
+                ExpressionAttributeValues={
+                    ":0": 0,
+                    ":1": 1,
+                    ":last_message_day": datetime.fromisoformat(self.datetime)
+                    .date()
+                    .isoformat(),
+                    ":last_message": self.datetime,
+                },
                 ReturnValues="UPDATED_NEW",
             )["Attributes"]["seq"]
         except ClientError as e:
